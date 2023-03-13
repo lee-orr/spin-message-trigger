@@ -1,0 +1,20 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+	"name": "Gather Together",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "dockerComposeFile": "../compose-dev.yaml",
+  "service": "devcontainer",
+	"workspaceFolder": "/workspace",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"bungcip.better-toml",
+				"panicbit.cargo",
+				"serayuzgur.crates",
+				"JScearcy.rust-doc-viewer",
+				"rust-lang.rust-analyzer"
+			]
+		}
+	},
+}
