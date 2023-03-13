@@ -1,0 +1,34 @@
+FROM ubuntu:latest as base
+
+# Update default packages
+RUN apt-get update
+
+# Get Ubuntu packages
+RUN apt-get install -y \
+    build-essential \
+    curl \
+    pkg-config \
+    libssl-dev \
+    wget
+
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add wasm32-wasi
+
+RUN apt-get install -y git
+
+RUN <<EOF
+git clone https://github.com/fermyon/spin
+cd ./spin
+cargo install --locked --path ./
+EOF
+
+FROM base as development
+RUN cargo install cargo-watch
+RUN rustup component add clippy
+RUN rustup component add rustfmt
+RUN rustup component add rust-analyzer
+RUN cargo install mprocs
+RUN cargo install --locked bacon
