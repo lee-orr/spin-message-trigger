@@ -1,0 +1,19 @@
+version: '4'
+services:
+  devcontainer:
+    build: 
+      target: development
+      dockerfile: Dockerfile
+    command: sleep infinity
+    environment:
+      HOST_NAME: ${HOST_NAME}
+    volumes:
+      - ./:/workspace
+
+  nats:
+    image: nats:2.8.4-alpine
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+    command: [ "-js" ]
