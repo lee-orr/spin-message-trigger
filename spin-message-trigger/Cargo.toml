@@ -1,0 +1,22 @@
+[package]
+name = "spin-message-trigger"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+anyhow = "1.0.68"
+async-trait = "0.1"
+clap = { version = "4", features = ["derive", "env"] }
+futures = "0.3.25"
+serde = "1.0"
+spin-core = { git = "https://github.com/fermyon/spin", tag = "v0.10.1" }
+spin-trigger = { git = "https://github.com/fermyon/spin", tag = "v0.10.1" }
+tokio = { version = "1.11", features = [ "full" ] }
+tokio-scoped = "0.2.0"
+dashmap = "5"
+
+[dependencies.wit-bindgen-wasmtime]
+git = "https://github.com/fermyon/wit-bindgen-backport"
+rev = "a39003fadce6c7a8654e3e044fc39fc80d81ec7b"
+features = ["async"]

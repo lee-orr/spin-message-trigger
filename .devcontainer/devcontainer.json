@@ -13,7 +13,8 @@
 				"panicbit.cargo",
 				"serayuzgur.crates",
 				"JScearcy.rust-doc-viewer",
-				"rust-lang.rust-analyzer"
+				"rust-lang.rust-analyzer",
+				"jedisct1.witx"
 			]
 		}
 	},

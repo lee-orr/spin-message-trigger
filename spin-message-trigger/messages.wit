@@ -1,0 +1,23 @@
+record metadata {
+    name: string,
+    value: list<u8>
+}
+
+record message {
+    body: option<list<u8>>,
+    metadata: list<metadata>
+}
+
+record subject-message {
+    subject: string,
+    message: message
+}
+
+variant result {
+    response(option<message>),
+    publish(list<subject-message>),
+    error(string),
+    error-response(option<message>)
+}
+
+handle-message: func(message: subject-message) -> result
