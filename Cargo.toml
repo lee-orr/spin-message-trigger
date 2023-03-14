@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "trigger-message",
+    "spin-message-types",
+    "example-app"
+]

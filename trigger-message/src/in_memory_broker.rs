@@ -3,11 +3,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashMap;
+use spin_message_types::export::SubjectMessage;
 
-use crate::{
-    broker::{create_channel, MessageBroker, Receiver, Sender},
-    wit::SubjectMessage,
-};
+use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
 
 #[derive(Clone, Debug, Default)]
 pub struct InMemoryBroker {
@@ -41,10 +39,8 @@ impl MessageBroker for InMemoryBroker {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        broker::MessageBroker,
-        wit::{Message, SubjectMessage},
-    };
+    use crate::broker::MessageBroker;
+    use spin_message_types::export::{Message, SubjectMessage};
 
     use super::InMemoryBroker;
 

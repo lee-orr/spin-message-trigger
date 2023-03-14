@@ -1,0 +1,25 @@
+spin_manifest_version = "1"
+authors = ["lee-orr <lee-orr@users.noreply.github.com>"]
+description = ""
+name = "example-app"
+version = "0.1.0"
+
+[trigger]
+type = "message"
+
+[trigger.brokers.test]
+broker_type = "InMemoryBroker"
+
+[trigger.brokers.test.gateway.Http]
+port = 3_005
+websockets = true
+
+[[component]]
+id = "example-app"
+source = "../target/wasm32-wasi/release/example_app.wasm"
+allowed_http_hosts = []
+[component.trigger]
+broker = "test"
+subscription = "hello"
+[component.build]
+command = "cargo build --target wasm32-wasi --release"

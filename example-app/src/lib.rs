@@ -1,14 +1,15 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use std::str::from_utf8;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+struct Handler;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl spin_message_types::import::Messages for Handler {
+    fn handle_message(
+        message: spin_message_types::import::SubjectMessage,
+    ) -> spin_message_types::import::Outcome {
+        println!("got here");
+        if let Some(body) = message.message.body {
+            println!("{:?}", from_utf8(&body));
+        }
+        spin_message_types::import::Outcome::Publish(vec![])
     }
 }

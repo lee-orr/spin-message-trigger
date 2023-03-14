@@ -1,0 +1,20 @@
+[package]
+name = "spin-message-types"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+export = ["dep:wit-bindgen-wasmtime"]
+import = ["dep:wit-bindgen"]
+
+[dependencies]
+wit-bindgen = { git = "https://github.com/bytecodealliance/wit-bindgen", version = "0.4.0", optional = true}
+wasmtime = { version = "5", optional = true, features=["component-model"]}
+
+[dependencies.wit-bindgen-wasmtime]
+git = "https://github.com/fermyon/wit-bindgen-backport"
+rev = "b97517c7bfcc82f3cd6e730270d40cd4781aa789"
+features = ["async"]
+optional = true

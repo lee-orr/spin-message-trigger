@@ -1,5 +1,5 @@
 [package]
-name = "spin-message-trigger"
+name = "trigger-message"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,8 +16,4 @@ tokio = { version = "1.11", features = [ "full" ] }
 tokio-scoped = "0.2.0"
 dashmap = "5"
 axum = "0.6"
-
-[dependencies.wit-bindgen-wasmtime]
-git = "https://github.com/fermyon/wit-bindgen-backport"
-rev = "a39003fadce6c7a8654e3e044fc39fc80d81ec7b"
-features = ["async"]
+spin-message-types = { path = "../spin-message-types", features = ["export"] }

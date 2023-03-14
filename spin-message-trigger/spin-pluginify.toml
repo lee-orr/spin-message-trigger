@@ -1,5 +1,0 @@
-name = "spin-message-trigger"
-version = "0.0.1"
-spin_compatibility = ">=0.10"
-license = "MIT"
-package = "./target/release/spin-message-trigger"

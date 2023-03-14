@@ -8,10 +8,9 @@ use axum::{
 };
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
-use crate::{
-    broker::MessageBroker,
-    wit::{messages::MetadataResult, Message, SubjectMessage},
-};
+use spin_message_types::export::{messages::MetadataResult, Message, SubjectMessage};
+
+use crate::broker::MessageBroker;
 
 pub async fn spawn_gateway(port: u16, _websockets: bool, broker: Arc<dyn MessageBroker>) {
     let app = Router::new()
