@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::sync::broadcast;
 
-use crate::wit::{SubjectMessage, Message};
+use crate::wit::SubjectMessage;
 
 pub type Receiver = broadcast::Receiver<SubjectMessage>;
 pub type Sender = broadcast::Sender<SubjectMessage>;
@@ -13,16 +13,13 @@ pub fn create_channel(capacity: usize) -> Sender {
 }
 
 #[async_trait]
-pub trait MessageBroker {
+pub trait MessageBroker: Send + Sync {
     async fn publish(&self, message: SubjectMessage) -> Result<()>;
-    fn subscribe(&mut self, subject: &str) -> Result<Receiver>;
+    fn subscribe(&self, subject: &str) -> Result<Receiver>;
 
-    async fn publish_all(&self, subject: &str, messages: Vec<Message>) -> Result<()> {
-        for msg in messages.iter() {
-            self.publish(SubjectMessage {
-                subject: subject.to_string(),
-                message: msg.clone()
-            }).await?;
+    async fn publish_all(&self, messages: Vec<SubjectMessage>) -> Result<()> {
+        for msg in messages.into_iter() {
+            self.publish(msg).await?;
         }
         Ok(())
     }

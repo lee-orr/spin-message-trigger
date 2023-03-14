@@ -25,7 +25,7 @@ impl MessageBroker for InMemoryBroker {
         Ok(())
     }
 
-    fn subscribe(&mut self, subject: &str) -> Result<Receiver> {
+    fn subscribe(&self, subject: &str) -> Result<Receiver> {
         if let Some(sender) = self.map.get(subject) {
             Ok(sender.subscribe())
         } else {
@@ -55,7 +55,7 @@ mod test {
             },
         };
 
-        let mut broker = InMemoryBroker::default();
+        let broker = InMemoryBroker::default();
 
         let mut rx = broker.subscribe("message.test").unwrap();
 
@@ -76,7 +76,7 @@ mod test {
             },
         };
 
-        let mut broker = InMemoryBroker::default();
+        let broker = InMemoryBroker::default();
 
         let mut rx = broker.subscribe("message.wrong").unwrap();
 
@@ -87,27 +87,36 @@ mod test {
 
     #[tokio::test]
     async fn multiple_published_messages_get_sent_through() {
-        let message_1 = Message {
+        let message_1 = SubjectMessage {
+            subject: "message.test".to_string(),
+            message: Message {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
-            };
-        let message_2 = Message {
+            },
+        };
+        let message_2 = SubjectMessage {
+            subject: "message.test".to_string(),
+            message: Message {
                 body: Some("test 2".as_bytes().to_owned()),
                 metadata: vec![],
-            };
+            },
+        };
 
-        let mut broker = InMemoryBroker::default();
+        let broker = InMemoryBroker::default();
 
         let mut rx = broker.subscribe("message.test").unwrap();
 
-        broker.publish_all("message.test", vec![message_1.clone(), message_2.clone()]).await.unwrap();
+        broker
+            .publish_all(vec![message_1.clone(), message_2.clone()])
+            .await
+            .unwrap();
 
         let result = rx.try_recv().unwrap();
         assert_eq!(result.subject, "message.test");
-        assert_eq!(result.message.body, message_1.body);
+        assert_eq!(result.message.body, message_1.message.body);
 
         let result = rx.try_recv().unwrap();
         assert_eq!(result.subject, "message.test");
-        assert_eq!(result.message.body, message_2.body);
+        assert_eq!(result.message.body, message_2.message.body);
     }
 }
