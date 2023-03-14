@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, error::Error};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -17,7 +17,7 @@ pub struct InMemoryBroker {
 #[async_trait]
 impl MessageBroker for InMemoryBroker {
     async fn publish(&self, message: SubjectMessage) -> Result<()> {
-        let subject = &message.subject;
+        let subject = &message.subject.as_deref().ok_or(anyhow::Error::msg("No Subject To Publish"))?;
         for r in self.map.iter().filter(|r| r.key() == subject) {
             let value = r.value();
             value.send(message.clone())?;
@@ -48,11 +48,12 @@ mod test {
     #[tokio::test]
     async fn a_published_message_gets_recieved_by_a_subscriber() {
         let message = SubjectMessage {
-            subject: "message.test".to_string(),
+            subject: Some("message.test".to_string()),
             message: Message {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
             },
+            broker: None
         };
 
         let broker = InMemoryBroker::default();
@@ -69,11 +70,12 @@ mod test {
     #[tokio::test]
     async fn a_published_message_doesnt_get_recieved_by_the_wrong_subscriber() {
         let message = SubjectMessage {
-            subject: "message.test".to_string(),
+            subject: Some("message.test".to_string()),
             message: Message {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
             },
+            broker: None
         };
 
         let broker = InMemoryBroker::default();
@@ -88,18 +90,20 @@ mod test {
     #[tokio::test]
     async fn multiple_published_messages_get_sent_through() {
         let message_1 = SubjectMessage {
-            subject: "message.test".to_string(),
+            subject: Some("message.test".to_string()),
             message: Message {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
             },
+            broker: None
         };
         let message_2 = SubjectMessage {
-            subject: "message.test".to_string(),
+            subject: Some("message.test".to_string()),
             message: Message {
                 body: Some("test 2".as_bytes().to_owned()),
                 metadata: vec![],
             },
+            broker: None
         };
 
         let broker = InMemoryBroker::default();
@@ -112,11 +116,11 @@ mod test {
             .unwrap();
 
         let result = rx.try_recv().unwrap();
-        assert_eq!(result.subject, "message.test");
+        assert_eq!(result.subject.unwrap(), "message.test");
         assert_eq!(result.message.body, message_1.message.body);
 
         let result = rx.try_recv().unwrap();
-        assert_eq!(result.subject, "message.test");
+        assert_eq!(result.subject.unwrap(), "message.test");
         assert_eq!(result.message.body, message_2.message.body);
     }
 }

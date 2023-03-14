@@ -7,7 +7,7 @@ use broker::MessageBroker;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecutor};
-use std::collections::HashMap;
+use std::{collections::HashMap, default};
 
 use in_memory_broker::InMemoryBroker;
 use wit::{
@@ -34,6 +34,11 @@ pub enum BrokerConfig {
     InMemoryBroker,
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct GatewayConfig {
+
+}
+
 struct MessageTrigger {
     engine: TriggerAppEngine<Self>,
     brokers: HashMap<String, Box<dyn MessageBroker>>,
@@ -43,19 +48,16 @@ struct MessageTrigger {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct MessageMetadata {
-    broker_configs: HashMap<String, BrokerConfig>,
+    broker_configs: HashMap<String, (BrokerConfig, GatewayConfig)>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub enum MessageResultType {
     #[default]
     None,
-    Response {
-        broker: String,
-        subject: String,
-    },
     Publish {
-        broker: String,
+        default_broker: String,
+        default_subject: String,
     },
 }
 
@@ -91,7 +93,7 @@ impl TriggerExecutor for MessageTrigger {
             .iter()
             .map(|(key, value)| {
                 let key = key.clone();
-                let broker: Box<dyn MessageBroker> = match value {
+                let broker: Box<dyn MessageBroker> = match value.0 {
                     BrokerConfig::InMemoryBroker => {
                         Box::<in_memory_broker::InMemoryBroker>::default()
                     }
@@ -136,21 +138,21 @@ impl TriggerExecutor for MessageTrigger {
 }
 
 impl MessageTrigger {
-    async fn send_with_broker(&self, broker: &String, msg: SubjectMessage) -> anyhow::Result<()>{
+    async fn send_with_broker(&self, broker: &String, subject: &String, mut msg: SubjectMessage) -> anyhow::Result<()>{
+        let broker = msg.broker.as_ref().unwrap_or(broker);
         if let Some(broker) = self.brokers.get(broker) {
+            msg.subject = Some(msg.subject.unwrap_or(subject.clone()));
             broker.publish(msg).await?;
             Ok(())
         } else {
             bail!("No such broker");
         }
     }
-    async fn send_all_with_broker(&self, broker: &String, msg: Vec<SubjectMessage>) -> anyhow::Result<()>{
-        if let Some(broker) = self.brokers.get(broker) {
-            broker.publish_all(msg).await?;
-            Ok(())
-        } else {
-            bail!("No such broker");
+    async fn send_all_with_broker(&self, broker: &String, subject: &String, msgs: Vec<SubjectMessage>) -> anyhow::Result<()>{
+        for msg in msgs.into_iter() {
+            self.send_with_broker(broker, subject, msg).await?;
         }
+        Ok(())
     }
 
     async fn handle_message(
@@ -174,45 +176,22 @@ impl MessageTrigger {
         let original_subject = &message.subject;
 
         let message = SubjectMessageParam {
-            subject: &message.subject,
+            subject: message.subject.as_deref(),
             message: MessageParam {
                 body: message.message.body.as_deref(),
                 metadata: metadata.as_slice(),
             },
+            broker: Some(&config.broker)
         };
 
         let result = engine.handle_message(&mut store, message).await?;
 
         match (result, &config.result) {
-            (Outcome::Response(msg), MessageResultType::Response { broker, subject }) => {
-                let msg = SubjectMessage {
-                    subject: subject.clone(),
-                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
-                };
-                self.send_with_broker(broker, msg).await?;
-            },
-            (Outcome::Response(msg), MessageResultType::Publish { broker }) => {
-                let msg = SubjectMessage {
-                    subject: original_subject.clone(),
-                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
-                };
-                self.send_with_broker(broker, msg).await?;
-            },
-            (Outcome::Publish(msgs), MessageResultType::Response { broker, subject: _ }) => self.send_all_with_broker(broker, msgs).await?,
-            (Outcome::Publish(msgs), MessageResultType::Publish { broker }) => self.send_all_with_broker(broker, msgs).await?,
-            (Outcome::ErrorResponse(msg), MessageResultType::Response { broker, subject }) => {
-                let msg = SubjectMessage {
-                    subject: subject.clone(),
-                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
-                };
-                self.send_with_broker(broker, msg).await?;
-            },
-            (Outcome::ErrorResponse(msg), MessageResultType::Publish { broker }) => {
-                let msg = SubjectMessage {
-                    subject: original_subject.clone(),
-                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
-                };
-                self.send_with_broker(broker, msg).await?;
+            (Outcome::Publish(msgs), MessageResultType::Publish { default_broker, default_subject }) => self.send_all_with_broker(default_broker, default_subject, msgs).await?,
+            (Outcome::Publish(msgs), MessageResultType::None ) => {
+                if let Some(default_subject) = original_subject {
+                    self.send_all_with_broker(&config.broker, default_subject, msgs).await?
+                }
             },
             _ => {}
         }

@@ -9,15 +9,14 @@ record message {
 }
 
 record subject-message {
-    subject: string,
-    message: message
+    message: message,
+    subject: option<string>,
+    broker: option<string>
 }
 
 variant outcome {
-    response(option<message>),
     publish(list<subject-message>),
-    error(string),
-    error-response(option<message>)
+    error(string)
 }
 
 handle-message: func(message: subject-message) -> outcome
