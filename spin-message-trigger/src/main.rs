@@ -1,14 +1,15 @@
 mod broker;
+mod gateway;
 mod in_memory_broker;
 mod wit;
-mod gateway;
 
 use anyhow::{bail, Error};
 use broker::MessageBroker;
 use clap::Parser;
+use gateway::spawn_gateway;
 use serde::{Deserialize, Serialize};
 use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecutor};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use in_memory_broker::InMemoryBroker;
 use wit::{
@@ -47,7 +48,7 @@ pub enum GatewayConfig {
 
 struct MessageTrigger {
     engine: TriggerAppEngine<Self>,
-    brokers: HashMap<String, Box<dyn MessageBroker>>,
+    brokers: HashMap<String, Arc<dyn MessageBroker>>,
     components: Vec<MessageTriggerConfig>,
 }
 
@@ -97,13 +98,16 @@ impl TriggerExecutor for MessageTrigger {
         let brokers = metadata
             .broker_configs
             .iter()
-            .map(|(key, value)| {
+            .map(|(key, (broker_config, gateway_config))| {
                 let key = key.clone();
-                let broker: Box<dyn MessageBroker> = match value.0 {
+                let broker: Arc<dyn MessageBroker> = match broker_config {
                     BrokerConfig::InMemoryBroker => {
-                        Box::<in_memory_broker::InMemoryBroker>::default()
+                        Arc::<in_memory_broker::InMemoryBroker>::default()
                     }
                 };
+                if let GatewayConfig::Http { port, websockets } = gateway_config {
+                    tokio::spawn(spawn_gateway(*port, *websockets, broker.clone()));
+                }
                 (key, broker)
             })
             .collect();

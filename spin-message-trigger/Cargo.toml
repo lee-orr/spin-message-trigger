@@ -15,6 +15,7 @@ spin-trigger = { git = "https://github.com/fermyon/spin", tag = "v0.10.1" }
 tokio = { version = "1.11", features = [ "full" ] }
 tokio-scoped = "0.2.0"
 dashmap = "5"
+axum = "0.6"
 
 [dependencies.wit-bindgen-wasmtime]
 git = "https://github.com/fermyon/wit-bindgen-backport"
