@@ -1,4 +1,4 @@
-use std::{sync::Arc, error::Error};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -17,7 +17,10 @@ pub struct InMemoryBroker {
 #[async_trait]
 impl MessageBroker for InMemoryBroker {
     async fn publish(&self, message: SubjectMessage) -> Result<()> {
-        let subject = &message.subject.as_deref().ok_or(anyhow::Error::msg("No Subject To Publish"))?;
+        let subject = &message
+            .subject
+            .as_deref()
+            .ok_or(anyhow::Error::msg("No Subject To Publish"))?;
         for r in self.map.iter().filter(|r| r.key() == subject) {
             let value = r.value();
             value.send(message.clone())?;
@@ -53,7 +56,7 @@ mod test {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
             },
-            broker: None
+            broker: None,
         };
 
         let broker = InMemoryBroker::default();
@@ -75,7 +78,7 @@ mod test {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
             },
-            broker: None
+            broker: None,
         };
 
         let broker = InMemoryBroker::default();
@@ -95,7 +98,7 @@ mod test {
                 body: Some("test".as_bytes().to_owned()),
                 metadata: vec![],
             },
-            broker: None
+            broker: None,
         };
         let message_2 = SubjectMessage {
             subject: Some("message.test".to_string()),
@@ -103,7 +106,7 @@ mod test {
                 body: Some("test 2".as_bytes().to_owned()),
                 metadata: vec![],
             },
-            broker: None
+            broker: None,
         };
 
         let broker = InMemoryBroker::default();
