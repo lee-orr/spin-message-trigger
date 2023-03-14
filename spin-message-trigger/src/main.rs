@@ -2,7 +2,7 @@ mod broker;
 mod in_memory_broker;
 mod wit;
 
-use anyhow::Error;
+use anyhow::{Error, bail};
 use broker::MessageBroker;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
@@ -11,8 +11,8 @@ use std::collections::HashMap;
 
 use in_memory_broker::InMemoryBroker;
 use wit::{
-    messages::{MessageParam, MetadataParam, SubjectMessageParam},
-    SubjectMessage,
+    messages::{MessageParam, MetadataParam, SubjectMessageParam, Outcome},
+    SubjectMessage, Message,
 };
 
 #[tokio::main]
@@ -136,6 +136,23 @@ impl TriggerExecutor for MessageTrigger {
 }
 
 impl MessageTrigger {
+    async fn send_with_broker(&self, broker: &String, msg: SubjectMessage) -> anyhow::Result<()>{
+        if let Some(broker) = self.brokers.get(broker) {
+            broker.publish(msg).await?;
+            Ok(())
+        } else {
+            bail!("No such broker");
+        }
+    }
+    async fn send_all_with_broker(&self, broker: &String, msg: Vec<SubjectMessage>) -> anyhow::Result<()>{
+        if let Some(broker) = self.brokers.get(broker) {
+            broker.publish_all(msg).await?;
+            Ok(())
+        } else {
+            bail!("No such broker");
+        }
+    }
+
     async fn handle_message(
         &self,
         config: &MessageTriggerConfig,
@@ -154,6 +171,8 @@ impl MessageTrigger {
             })
             .collect::<Vec<_>>();
 
+        let original_subject = &message.subject;
+
         let message = SubjectMessageParam {
             subject: &message.subject,
             message: MessageParam {
@@ -162,7 +181,41 @@ impl MessageTrigger {
             },
         };
 
-        engine.handle_message(&mut store, message).await?;
+        let result = engine.handle_message(&mut store, message).await?;
+
+        match (result, &config.result) {
+            (Outcome::Response(msg), MessageResultType::Response { broker, subject }) => {
+                let msg = SubjectMessage {
+                    subject: subject.clone(),
+                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
+                };
+                self.send_with_broker(broker, msg).await?;
+            },
+            (Outcome::Response(msg), MessageResultType::Publish { broker }) => {
+                let msg = SubjectMessage {
+                    subject: original_subject.clone(),
+                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
+                };
+                self.send_with_broker(broker, msg).await?;
+            },
+            (Outcome::Publish(msgs), MessageResultType::Response { broker, subject: _ }) => self.send_all_with_broker(broker, msgs).await?,
+            (Outcome::Publish(msgs), MessageResultType::Publish { broker }) => self.send_all_with_broker(broker, msgs).await?,
+            (Outcome::ErrorResponse(msg), MessageResultType::Response { broker, subject }) => {
+                let msg = SubjectMessage {
+                    subject: subject.clone(),
+                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
+                };
+                self.send_with_broker(broker, msg).await?;
+            },
+            (Outcome::ErrorResponse(msg), MessageResultType::Publish { broker }) => {
+                let msg = SubjectMessage {
+                    subject: original_subject.clone(),
+                    message: msg.unwrap_or(Message { body: None, metadata: vec![]})
+                };
+                self.send_with_broker(broker, msg).await?;
+            },
+            _ => {}
+        }
         Ok(())
     }
 }

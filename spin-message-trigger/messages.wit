@@ -13,11 +13,11 @@ record subject-message {
     message: message
 }
 
-variant result {
+variant outcome {
     response(option<message>),
     publish(list<subject-message>),
     error(string),
     error-response(option<message>)
 }
 
-handle-message: func(message: subject-message) -> result
+handle-message: func(message: subject-message) -> outcome
