@@ -15,5 +15,5 @@ spin-trigger = { git = "https://github.com/fermyon/spin", tag = "v0.10.1" }
 tokio = { version = "1.11", features = [ "full" ] }
 tokio-scoped = "0.2.0"
 dashmap = "5"
-axum = "0.6"
+axum = { version = "0.6", features = ["ws"] }
 spin-message-types = { path = "../spin-message-types", features = ["export"] }
