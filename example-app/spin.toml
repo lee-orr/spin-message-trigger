@@ -15,11 +15,23 @@ port = 3_005
 websockets = true
 
 [[component]]
-id = "example-app"
+id = "hello"
 source = "../target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "test"
 subscription = "hello"
+result = { default_broker = "test", default_subject = "goodbye" }
+[component.build]
+command = "cargo build --target wasm32-wasi --release"
+
+[[component]]
+id = "goodbye"
+source = "../target/wasm32-wasi/release/example_app.wasm"
+allowed_http_hosts = []
+[component.trigger]
+broker = "test"
+subscription = "goodbye"
+result = { default_broker = "test", default_subject = "sink" }
 [component.build]
 command = "cargo build --target wasm32-wasi --release"

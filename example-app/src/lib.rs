@@ -10,5 +10,14 @@ fn handle_message(
     if let Some(body) = message.message.body {
         println!("{:?}", from_utf8(&body));
     }
-    Outcome::Publish(vec![])
+    let output: Vec<u8> = "Goodbye".bytes().collect();
+    Outcome::Publish(vec![
+        SubjectMessage {
+            message: Message {
+                body: Some(output),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    ])
 }

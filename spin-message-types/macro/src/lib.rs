@@ -18,6 +18,25 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
         pub type Outcome = messages::Outcome;
         pub type Metadata = messages::Metadata;
 
+        impl Default for Message {
+            fn default() -> Self {
+                Self {
+                    body: None,
+                    metadata: vec![]
+                }
+            }
+        }
+
+        impl Default for SubjectMessage {
+            fn default() -> Self {
+                Self {
+                    message: Message::default(),
+                    subject: None,
+                    broker: None
+                }
+            }
+        }
+
         impl messages::Messages for Messages {
                 #func
         }
