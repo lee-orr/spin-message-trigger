@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashMap;
-use spin_message_types::export::SubjectMessage;
+use spin_message_types::SubjectMessage;
 
 use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
 
@@ -40,7 +40,7 @@ impl MessageBroker for InMemoryBroker {
 #[cfg(test)]
 mod test {
     use crate::broker::MessageBroker;
-    use spin_message_types::export::{Message, SubjectMessage};
+    use spin_message_types::{Message, SubjectMessage};
 
     use super::InMemoryBroker;
 

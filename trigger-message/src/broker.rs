@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::sync::broadcast;
 
-use spin_message_types::export::SubjectMessage;
+use spin_message_types::SubjectMessage;
 
 pub type Receiver = broadcast::Receiver<SubjectMessage>;
 pub type Sender = broadcast::Sender<SubjectMessage>;

@@ -5,12 +5,16 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
 [features]
+default = ["export"]
 export = ["dep:wit-bindgen-wasmtime"]
 import = ["dep:message-macro"]
 
 [dependencies]
 message-macro = { path = "macro", optional = true }
+serde = { version = "1", features=["derive"] }
+anyhow = "*"
 
 [dependencies.wit-bindgen-wasmtime]
 git = "https://github.com/fermyon/wit-bindgen-backport"

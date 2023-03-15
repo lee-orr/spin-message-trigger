@@ -12,9 +12,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use in_memory_broker::InMemoryBroker;
 use spin_message_types::export::{
-    messages::{MessageParam, MetadataParam, Outcome, SubjectMessageParam},
-    SubjectMessage,
+    messages::{InternalMetadataParam, InternalMessageParam, InternalSubjectMessageParam, Outcome},
 };
+
+use spin_message_types::SubjectMessage;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -224,7 +225,7 @@ impl MessageTrigger {
             .message
             .metadata
             .iter()
-            .map(|v| MetadataParam {
+            .map(|v| InternalMetadataParam {
                 name: &v.name,
                 value: v.value.as_slice(),
             })
@@ -232,9 +233,9 @@ impl MessageTrigger {
 
         let original_subject = &message.subject;
 
-        let message = SubjectMessageParam {
+        let message = InternalSubjectMessageParam {
             subject: message.subject.as_deref(),
-            message: MessageParam {
+            message: InternalMessageParam {
                 body: message.message.body.as_deref(),
                 metadata: metadata.as_slice(),
             },
@@ -255,12 +256,12 @@ impl MessageTrigger {
                     default_subject,
                 }),
             ) => {
-                self.send_all_with_broker(default_broker, default_subject, msgs)
+                self.send_all_with_broker(default_broker, default_subject, msgs.into_iter().map(|v| v.into()).collect())
                     .await?
             }
             (Outcome::Publish(msgs), None) => {
                 if let Some(default_subject) = original_subject {
-                    self.send_all_with_broker(&config.broker, default_subject, msgs)
+                    self.send_all_with_broker(&config.broker, default_subject, msgs.into_iter().map(|v| v.into()).collect())
                         .await?
                 }
             }

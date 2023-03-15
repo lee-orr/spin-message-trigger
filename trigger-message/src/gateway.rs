@@ -5,13 +5,14 @@ use axum::{
         Path, Query, State,
     },
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{IntoResponse},
     routing::{get, post},
     Router,
 };
+use serde::Serialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
-use spin_message_types::export::{messages::MetadataResult, Message, SubjectMessage};
+use spin_message_types::{SubjectMessage, Message, Metadata};
 
 use crate::{broker::MessageBroker, WebsocketConfig};
 
@@ -55,7 +56,7 @@ async fn publish(
                 body: Some(body.into()),
                 metadata: params
                     .iter()
-                    .map(|(key, value)| MetadataResult {
+                    .map(|(key, value)| Metadata {
                         name: key.clone(),
                         value: value.clone().into_bytes(),
                     })
@@ -106,8 +107,19 @@ async fn handle_websocket(mut socket: WebSocket, subject: String, broker: Arc<dy
                         }
                     }
                 },
-                WebsocketConfig::Messagepack => todo!(),
-                WebsocketConfig::Json => todo!(),
+                WebsocketConfig::Messagepack => {
+                    let mut buf = Vec::new();
+                    if let Ok(()) = message.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
+                        let _ = socket.send(WsMessage::Binary(buf)).await;
+                        println!("socket subscription messagepack sent");
+                    }
+                },
+                WebsocketConfig::Json => {
+                    if let Ok(json) = serde_json::to_string(&message) {
+                        let _ = socket.send(WsMessage::Text(json)).await;
+                        println!("socket subscription message json sent");
+                    }
+                },
             }
         }
     }

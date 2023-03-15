@@ -1,22 +1,22 @@
-record metadata {
+record internal-metadata {
     name: string,
     value: list<u8>
 }
 
-record message {
+record internal-message {
     body: option<list<u8>>,
-    metadata: list<metadata>
+    metadata: list<internal-metadata>
 }
 
-record subject-message {
-    message: message,
+record internal-subject-message {
+    message: internal-message,
     subject: option<string>,
     broker: option<string>
 }
 
 variant outcome {
-    publish(list<subject-message>),
+    publish(list<internal-subject-message>),
     error(string)
 }
 
-handle-message: func(message: subject-message) -> outcome
+handle-message: func(message: internal-subject-message) -> outcome

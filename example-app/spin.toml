@@ -12,7 +12,7 @@ broker_type = "InMemoryBroker"
 
 [trigger.brokers.test.gateway.Http]
 port = 3_005
-websockets = "TextBody"
+websockets = "Json"
 
 [[component]]
 id = "hello"
