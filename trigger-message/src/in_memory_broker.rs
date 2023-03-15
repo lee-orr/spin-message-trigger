@@ -4,12 +4,16 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashMap;
 use spin_message_types::SubjectMessage;
+use wildmatch::*;
 
 use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
 
+#[derive(Clone, Debug)]
+pub struct Subscription(WildMatch, Sender);
+
 #[derive(Clone, Debug, Default)]
 pub struct InMemoryBroker {
-    map: Arc<DashMap<String, Sender>>,
+    map: Arc<DashMap<String, Subscription>>,
 }
 
 #[async_trait]
@@ -19,19 +23,25 @@ impl MessageBroker for InMemoryBroker {
             .subject
             .as_deref()
             .ok_or(anyhow::Error::msg("No Subject To Publish"))?;
-        for r in self.map.iter().filter(|r| r.key() == subject) {
+        for r in self
+            .map
+            .iter()
+            .filter(|r| r.key() == subject || r.0.matches(subject))
+        {
             let value = r.value();
-            value.send(message.clone())?;
+            value.1.send(message.clone())?;
         }
         Ok(())
     }
 
     fn subscribe(&self, subject: &str) -> Result<Receiver> {
         if let Some(sender) = self.map.get(subject) {
-            Ok(sender.subscribe())
+            Ok(sender.1.subscribe())
         } else {
             let sender = create_channel(10);
-            self.map.insert(subject.to_string(), sender.clone());
+            let wildmatch = WildMatch::new(subject);
+            self.map
+                .insert(subject.to_string(), Subscription(wildmatch, sender.clone()));
             Ok(sender.subscribe())
         }
     }
@@ -121,5 +131,47 @@ mod test {
         let result = rx.try_recv().unwrap();
         assert_eq!(result.subject.unwrap(), "message.test");
         assert_eq!(result.message.body, message_2.message.body);
+    }
+
+    #[tokio::test]
+    async fn a_wildcard_subscription_catches_matching_subjects() {
+        let message = SubjectMessage {
+            subject: Some("message.test".to_string()),
+            message: Message {
+                body: Some("test".as_bytes().to_owned()),
+                metadata: vec![],
+            },
+            broker: None,
+        };
+
+        let broker = InMemoryBroker::default();
+
+        let mut rx = broker.subscribe("message.*").unwrap();
+
+        broker.publish(message.clone()).await.unwrap();
+        let result = rx.try_recv().unwrap();
+
+        assert_eq!(result.subject, message.subject);
+        assert_eq!(result.message.body, message.message.body);
+    }
+
+    #[tokio::test]
+    async fn a_wildcard_subscription_doesnt_catch_non_matching_subjects() {
+        let message = SubjectMessage {
+            subject: Some("test.message".to_string()),
+            message: Message {
+                body: Some("test".as_bytes().to_owned()),
+                metadata: vec![],
+            },
+            broker: None,
+        };
+
+        let broker = InMemoryBroker::default();
+
+        let mut rx = broker.subscribe("message.*").unwrap();
+
+        broker.publish(message.clone()).await.unwrap();
+        let result = rx.try_recv();
+        assert!(result.is_err());
     }
 }

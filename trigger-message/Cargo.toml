@@ -19,3 +19,4 @@ axum = { version = "0.6", features = ["ws"] }
 spin-message-types = { path = "../spin-message-types", features = ["export"] }
 serde_json = "*"
 rmp-serde = "*"
+wildmatch = "2"

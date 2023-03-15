@@ -11,8 +11,8 @@ use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecuto
 use std::{collections::HashMap, sync::Arc};
 
 use in_memory_broker::InMemoryBroker;
-use spin_message_types::export::{
-    messages::{InternalMetadataParam, InternalMessageParam, InternalSubjectMessageParam, Outcome},
+use spin_message_types::export::messages::{
+    InternalMessageParam, InternalMetadataParam, InternalSubjectMessageParam, Outcome,
 };
 
 use spin_message_types::SubjectMessage;
@@ -49,7 +49,7 @@ pub enum WebsocketConfig {
     BinaryBody,
     TextBody,
     Messagepack,
-    Json
+    Json,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -256,13 +256,21 @@ impl MessageTrigger {
                     default_subject,
                 }),
             ) => {
-                self.send_all_with_broker(default_broker, default_subject, msgs.into_iter().map(|v| v.into()).collect())
-                    .await?
+                self.send_all_with_broker(
+                    default_broker,
+                    default_subject,
+                    msgs.into_iter().map(|v| v.into()).collect(),
+                )
+                .await?
             }
             (Outcome::Publish(msgs), None) => {
                 if let Some(default_subject) = original_subject {
-                    self.send_all_with_broker(&config.broker, default_subject, msgs.into_iter().map(|v| v.into()).collect())
-                        .await?
+                    self.send_all_with_broker(
+                        &config.broker,
+                        default_subject,
+                        msgs.into_iter().map(|v| v.into()).collect(),
+                    )
+                    .await?
                 }
             }
             _ => {}
