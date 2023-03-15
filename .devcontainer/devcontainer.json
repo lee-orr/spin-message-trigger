@@ -16,8 +16,7 @@
 				"rust-lang.rust-analyzer",
 				"jedisct1.witx",
 				"rangav.vscode-thunder-client",
-				"Odiriuss.rust-macro-expand",
-				"mohamed-nouri.websocket-client"
+				"Odiriuss.rust-macro-expand"
 			]
 		}
 	},
