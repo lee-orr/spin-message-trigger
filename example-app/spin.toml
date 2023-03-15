@@ -12,7 +12,13 @@ broker_type = "InMemoryBroker"
 
 [trigger.brokers.test.gateway.Http]
 port = 3_005
-websockets = "Json"
+
+[trigger.brokers.secondary]
+broker_type = "InMemoryBroker"
+
+[trigger.brokers.secondary.gateway.Http]
+port = 3_006
+websockets = "TextBody"
 
 [[component]]
 id = "hello"
@@ -21,7 +27,7 @@ allowed_http_hosts = []
 [component.trigger]
 broker = "test"
 subscription = "hello*"
-result = { default_broker = "test", default_subject = "goodbye" }
+result = { default_broker = "secondary", default_subject = "goodbye" }
 [component.build]
 command = "cargo build --target wasm32-wasi --release"
 
@@ -30,7 +36,7 @@ id = "goodbye"
 source = "../target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
-broker = "test"
+broker = "secondary"
 subscription = "goodbye"
 result = { default_broker = "test", default_subject = "sink" }
 [component.build]
