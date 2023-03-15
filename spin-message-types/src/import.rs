@@ -1,10 +1,23 @@
-#![allow(clippy::all)]
-#![allow(unused_macros)]
+// #![allow(clippy::all)]
+// #![allow(unused_macros)]
 
-mod messages {
-    use wit_bindgen::generate;
+// mod messages {
+//     struct Exported;
 
-    generate!("messages");
-}
+//     wit_bindgen_rust::export!("exported.wit");
 
-pub use messages::*;
+//     type Message = exported::Message;
+//     type SubjectMessage = exported::SubjectMessage;
+//     type Outcome = exported::Outcome;
+//     type Metadata = exported::Metadata;
+
+//     impl<T> exported::Exported for Exported<T> {
+//         fn handle_message(message:exported::SubjectMessage,) -> exported::Outcome {
+//             todo!()
+//         }
+//     }
+// }
+
+// pub use messages::*;
+
+pub use message_macro::*;

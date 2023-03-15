@@ -1,5 +1,5 @@
 name = "trigger-message"
-version = "0.0.7"
+version = "0.0.9"
 spin_compatibility = ">=0.10"
 license = "MIT"
 package = "../target/release/trigger-message"

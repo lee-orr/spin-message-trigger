@@ -156,7 +156,9 @@ impl TriggerExecutor for MessageTrigger {
                     if let Some(mut rx) = rx {
                         while let Ok(message) = rx.recv().await {
                             println!("Got message {message:?}");
-                            let _ = self.handle_message(&config, message).await;
+                            if let Err(e) = self.handle_message(&config, message).await {
+                                eprintln!("Error handling message: {e:?}");
+                            }
                         }
                     }
                 });
@@ -190,7 +192,7 @@ impl MessageTrigger {
     ) -> anyhow::Result<()> {
         for msg in msgs.into_iter() {
             if let Err(e) = self.send_with_broker(broker, subject, msg).await {
-                eprintln!("Got error: {e:?}");
+                eprintln!("Error sending message: {e:?}");
             }
         }
         Ok(())

@@ -33,4 +33,6 @@ RUN rustup component add rust-analyzer
 RUN cargo install mprocs
 RUN cargo install --locked bacon
 
-RUN  spin plugins install --url https://github.com/itowlson/spin-pluginify/releases/download/canary/pluginify.json --yes
+RUN spin plugins install --url https://github.com/itowlson/spin-pluginify/releases/download/canary/pluginify.json --yes
+RUN rustup toolchain install nightly
+RUN cargo install cargo-expand

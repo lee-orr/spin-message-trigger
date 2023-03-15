@@ -15,7 +15,8 @@
 				"JScearcy.rust-doc-viewer",
 				"rust-lang.rust-analyzer",
 				"jedisct1.witx",
-				"rangav.vscode-thunder-client"
+				"rangav.vscode-thunder-client",
+				"Odiriuss.rust-macro-expand"
 			]
 		}
 	},
