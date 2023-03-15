@@ -43,12 +43,21 @@ pub enum BrokerTypeConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub enum WebsocketConfig {
+    #[default]
+    BinaryBody,
+    TextBody,
+    Messagepack,
+    Json
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub enum GatewayConfig {
     #[default]
     None,
     Http {
         port: u16,
-        websockets: bool,
+        websockets: Option<WebsocketConfig>,
     },
 }
 
@@ -122,7 +131,7 @@ impl TriggerExecutor for MessageTrigger {
                         }
                     };
                     if let GatewayConfig::Http { port, websockets } = gateway {
-                        tokio::spawn(spawn_gateway(*port, *websockets, broker.clone()));
+                        tokio::spawn(spawn_gateway(*port, websockets.clone(), broker.clone()));
                     }
                     println!("Broker and gateway for key {key} complete");
                     (key, broker)

@@ -5,7 +5,7 @@ use axum::{
         Path, Query, State,
     },
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     routing::{get, post},
     Router,
 };
@@ -13,20 +13,25 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use spin_message_types::export::{messages::MetadataResult, Message, SubjectMessage};
 
-use crate::broker::MessageBroker;
+use crate::{broker::MessageBroker, WebsocketConfig};
 
-pub async fn spawn_gateway(port: u16, websockets: bool, broker: Arc<dyn MessageBroker>) {
+#[derive(Clone)]
+struct GatewayState {
+    broker: Arc<dyn MessageBroker>,
+    websockets: Option<WebsocketConfig>
+}
+
+pub async fn spawn_gateway(port: u16, websockets: Option<WebsocketConfig>, broker: Arc<dyn MessageBroker>) {
     let app = Router::new()
         .route("/publish/*subject", post(publish))
         .route(
             "/subscribe/*subject",
-            if websockets {
                 get(subscribe)
-            } else {
-                get(cannot_subscribe)
-            },
         )
-        .with_state(broker);
+        .with_state(Arc::new(GatewayState {
+            broker,
+            websockets
+        }));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("Listening on {}", addr);
@@ -39,9 +44,10 @@ pub async fn spawn_gateway(port: u16, websockets: bool, broker: Arc<dyn MessageB
 async fn publish(
     Path(subject): Path<String>,
     Query(params): Query<HashMap<String, String>>,
-    State(broker): State<Arc<dyn MessageBroker>>,
+    State(state): State<Arc<GatewayState>>,
     body: Bytes,
 ) -> impl IntoResponse {
+    let broker = &state.broker;
     match broker
         .publish(SubjectMessage {
             subject: Some(subject),
@@ -64,23 +70,44 @@ async fn publish(
     }
 }
 
-async fn cannot_subscribe() -> impl IntoResponse {
-    "Websocket Subscriptions Aren't Supported"
-}
-
 async fn subscribe(
     Path(subject): Path<String>,
-    State(broker): State<Arc<dyn MessageBroker>>,
+    State(state): State<Arc<GatewayState>>,
     ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_websocket(socket, subject, broker))
+    println!("Setting up upgrade");
+    let websockets = state.websockets.clone();
+
+    if let Some(websockets) = websockets {
+        ws.on_upgrade(move |socket| handle_websocket(socket, subject, state.broker.clone(), websockets)).into_response()
+    } else {
+        (StatusCode::BAD_REQUEST, "Websockets aren't supported").into_response()
+    }
 }
 
-async fn handle_websocket(mut socket: WebSocket, subject: String, broker: Arc<dyn MessageBroker>) {
+async fn handle_websocket(mut socket: WebSocket, subject: String, broker: Arc<dyn MessageBroker>, websockets: WebsocketConfig) {
+    println!("upgraded");
     if let Ok(mut result) = broker.subscribe(&subject) {
+        println!("subscribed");
         while let Ok(message) = result.recv().await {
-            if let Some(body) = message.message.body {
-                let _ = socket.send(WsMessage::Binary(body)).await;
+            println!("socket subscription message recieved");
+            match websockets {
+                WebsocketConfig::BinaryBody => {        
+                    if let Some(body) = message.message.body {
+                        let _ = socket.send(WsMessage::Binary(body)).await;
+                        println!("socket subscription message sent");
+                    }
+                },
+                WebsocketConfig::TextBody => {
+                    if let Some(body) = message.message.body {
+                        if let Ok(body) = std::str::from_utf8(&body) {
+                            let _ = socket.send(WsMessage::Text(body.to_string())).await;
+                            println!("socket subscription message sent");
+                        }
+                    }
+                },
+                WebsocketConfig::Messagepack => todo!(),
+                WebsocketConfig::Json => todo!(),
             }
         }
     }
