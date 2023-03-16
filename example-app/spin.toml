@@ -14,11 +14,13 @@ broker_type = "InMemoryBroker"
 port = 3_005
 
 [trigger.brokers.secondary]
-broker_type = "InMemoryBroker"
+broker_type = { Redis = "redis://redis:6379" }
+
 
 [trigger.brokers.secondary.gateway.Http]
 port = 3_006
 websockets = "TextBody"
+
 
 [[component]]
 id = "hello"

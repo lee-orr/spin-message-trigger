@@ -15,7 +15,7 @@ pub fn create_channel(capacity: usize) -> Sender {
 #[async_trait]
 pub trait MessageBroker: Send + Sync {
     async fn publish(&self, message: SubjectMessage) -> Result<()>;
-    fn subscribe(&self, subject: &str) -> Result<Receiver>;
+    async fn subscribe(&self, subject: &str) -> Result<Receiver>;
 
     async fn publish_all(&self, messages: Vec<SubjectMessage>) -> Result<()> {
         for msg in messages.into_iter() {

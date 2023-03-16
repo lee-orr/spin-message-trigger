@@ -1,0 +1,114 @@
+use std::sync::Arc;
+
+use anyhow::Result;
+use async_trait::async_trait;
+use dashmap::DashMap;
+use spin_message_types::{Message, SubjectMessage};
+use tokio::sync::mpsc;
+use futures::StreamExt;
+
+use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
+use redis::{*, aio::ConnectionLike};
+
+#[derive(Clone, Debug)]
+pub struct Subscription(Sender);
+
+#[derive(Clone, Debug)]
+pub struct RedisBroker {
+    map: Arc<DashMap<String, Subscription>>,
+    subscription_handler: mpsc::Sender<(String, Sender)>,
+    publish_handler: mpsc::Sender<(String, SubjectMessage)>,
+}
+
+impl RedisBroker {
+    pub fn new(address: String) -> Self {
+        let (subscription_handler, sub_rx) = mpsc::channel(100);
+        let (publish_handler, pub_rx) = mpsc::channel(100);
+        tokio::spawn(async move { 
+            if let Err(e) = RedisBroker::setup_client(address, sub_rx, pub_rx).await {
+                eprintln!("Redis Error: {e}");
+            }});
+
+        Self {
+            map: Default::default(),
+            subscription_handler,
+            publish_handler,
+        }
+    }
+
+    async fn setup_client(
+        address: String,
+        mut sub_rx: mpsc::Receiver<(String, Sender)>,
+        mut pub_rx: mpsc::Receiver<(String, SubjectMessage)>,
+    ) -> Result<()> {
+        let client = redis::Client::open(address)?;
+        {
+            let cloned = client.clone();
+            tokio::spawn(async move {
+                if let Ok(mut connection) = cloned.get_tokio_connection().await {
+                    println!("Publish redis connection ready");
+                    while let Some((subject, message)) = pub_rx.recv().await {
+                        let body = message.message.body.unwrap_or_default();
+                        println!("Publishing to {subject}");
+                        let result : RedisFuture<Value> = connection.publish(subject.clone(), body);
+                        match result.await {
+                            Ok(_) => println!("Published to {subject}"),
+                            Err(e) => eprintln!("Failed to publish - {e:?}"),
+                        }
+                    }
+                }
+            });
+        }
+
+        while let Some((subject, sender)) = sub_rx.recv().await {
+            let cloned = client.clone();
+            tokio::spawn(async move {
+                if let Ok(connection) = cloned.get_tokio_connection().await {
+                    println!("Subscribed to redis: {subject}");
+                    let mut pubsub = connection.into_pubsub();
+                    if let Ok(()) = pubsub.psubscribe(subject.clone()).await {
+                        let mut msgs = pubsub.on_message();
+                        while let Some(msg) =  msgs.next().await {
+                            let body = msg.get_payload_bytes().to_owned();
+                            let _ = sender.send(SubjectMessage {
+                                message: Message {
+                                    body: Some(body),
+                                    ..Default::default()
+                                },
+                                subject: Some(subject.clone()),
+                                ..Default::default()
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl MessageBroker for RedisBroker {
+    async fn publish(&self, message: SubjectMessage) -> Result<()> {
+        let subject = &message
+            .subject
+            .as_deref()
+            .ok_or(anyhow::Error::msg("No Subject To Publish"))?;
+        self.publish_handler.send((subject.to_string(), message)).await?;
+        Ok(())
+    }
+
+    async fn subscribe(&self, subject: &str) -> Result<Receiver> {
+        if let Some(sender) = self.map.get(subject) {
+            Ok(sender.0.subscribe())
+        } else {
+            let sender = create_channel(100);
+            self.map
+                .insert(subject.to_string(), Subscription(sender.clone()));
+            self.subscription_handler
+                .send((subject.to_string(), sender.clone())).await?;
+            Ok(sender.subscribe())
+        }
+    }
+}

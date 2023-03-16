@@ -20,3 +20,4 @@ spin-message-types = { path = "../spin-message-types", features = ["export"] }
 serde_json = "*"
 rmp-serde = "*"
 wildmatch = "2"
+redis = { version = "0.22", features = [ "tokio-comp" ] }

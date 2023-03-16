@@ -1,6 +1,7 @@
 mod broker;
 mod gateway;
 mod in_memory_broker;
+mod redis_broker;
 
 use anyhow::{bail, Error};
 use broker::MessageBroker;
@@ -41,6 +42,7 @@ pub struct BrokerConfig {
 pub enum BrokerTypeConfig {
     #[default]
     InMemoryBroker,
+    Redis(String)
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -130,6 +132,9 @@ impl TriggerExecutor for MessageTrigger {
                         BrokerTypeConfig::InMemoryBroker => {
                             Arc::<in_memory_broker::InMemoryBroker>::default()
                         }
+                        BrokerTypeConfig::Redis(address) => {
+                            Arc::new(redis_broker::RedisBroker::new(address.clone()))
+                        }
                     };
                     if let GatewayConfig::Http { port, websockets } = gateway {
                         tokio::spawn(spawn_gateway(*port, websockets.clone(), broker.clone()));
@@ -158,7 +163,7 @@ impl TriggerExecutor for MessageTrigger {
                 scope.spawn(async {
                     let config = config.clone();
                     let rx = if let Some(broker) = self.brokers.get(&config.broker) {
-                        broker.subscribe(&config.subscription).ok()
+                        broker.subscribe(&config.subscription).await.ok()
                     } else {
                         None
                     };
