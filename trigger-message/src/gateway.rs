@@ -1,10 +1,10 @@
 use axum::{
-    body::Bytes,
+    body::{Bytes, Body},
     extract::{
         ws::{Message as WsMessage, WebSocket, WebSocketUpgrade},
-        Path, Query, State,
+        Path, Query, State
     },
-    http::StatusCode,
+    http::{StatusCode, Request},
     response::IntoResponse,
     routing::{get, post},
     Router,
@@ -12,7 +12,7 @@ use axum::{
 use serde::Serialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
-use spin_message_types::{Message, Metadata, SubjectMessage};
+use spin_message_types::{InputMessage, OutputMessage};
 
 use crate::{broker::MessageBroker, WebsocketConfig};
 
@@ -42,24 +42,14 @@ pub async fn spawn_gateway(
 
 async fn publish(
     Path(subject): Path<String>,
-    Query(params): Query<HashMap<String, String>>,
     State(state): State<Arc<GatewayState>>,
     body: Bytes,
 ) -> impl IntoResponse {
     let broker = &state.broker;
     match broker
-        .publish(SubjectMessage {
+        .publish(OutputMessage {
             subject: Some(subject),
-            message: Message {
-                body: Some(body.into()),
-                metadata: params
-                    .iter()
-                    .map(|(key, value)| Metadata {
-                        name: key.clone(),
-                        value: value.clone().into_bytes(),
-                    })
-                    .collect(),
-            },
+            message: body.to_vec(),
             broker: None,
         })
         .await
@@ -100,18 +90,14 @@ async fn handle_websocket(
             println!("socket subscription message recieved");
             match websockets {
                 WebsocketConfig::BinaryBody => {
-                    if let Some(body) = message.message.body {
-                        let _ = socket.send(WsMessage::Binary(body)).await;
+                        let _ = socket.send(WsMessage::Binary(message.message)).await;
                         println!("socket subscription message sent");
-                    }
                 }
                 WebsocketConfig::TextBody => {
-                    if let Some(body) = message.message.body {
-                        if let Ok(body) = std::str::from_utf8(&body) {
+                        if let Ok(body) = std::str::from_utf8(&message.message) {
                             let _ = socket.send(WsMessage::Text(body.to_string())).await;
                             println!("socket subscription message sent");
                         }
-                    }
                 }
                 WebsocketConfig::Messagepack => {
                     let mut buf = Vec::new();

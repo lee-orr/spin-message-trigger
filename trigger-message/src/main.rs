@@ -12,11 +12,9 @@ use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecuto
 use std::{collections::HashMap, sync::Arc};
 
 use in_memory_broker::InMemoryBroker;
-use spin_message_types::export::messages::{
-    InternalMessageParam, InternalMetadataParam, InternalSubjectMessageParam, Outcome,
-};
+use spin_message_types::export::messages::{InternalMessage, Outcome};
 
-use spin_message_types::SubjectMessage;
+use spin_message_types::{InputMessage, OutputMessage};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -130,10 +128,10 @@ impl TriggerExecutor for MessageTrigger {
                     let key = key.clone();
                     let broker: Arc<dyn MessageBroker> = match broker_type {
                         BrokerTypeConfig::InMemoryBroker => {
-                            Arc::<in_memory_broker::InMemoryBroker>::default()
+                            Arc::new(in_memory_broker::InMemoryBroker::new(key.clone()))
                         }
                         BrokerTypeConfig::Redis(address) => {
-                            Arc::new(redis_broker::RedisBroker::new(address.clone()))
+                            Arc::new(redis_broker::RedisBroker::new(address.clone(), key.clone()))
                         }
                     };
                     if let GatewayConfig::Http { port, websockets } = gateway {
@@ -188,7 +186,7 @@ impl MessageTrigger {
         &self,
         broker: &str,
         subject: &str,
-        mut msg: SubjectMessage,
+        mut msg: OutputMessage,
     ) -> anyhow::Result<()> {
         let broker = msg.broker.as_deref().unwrap_or(broker);
         if let Some(broker) = self.brokers.get(broker) {
@@ -203,7 +201,7 @@ impl MessageTrigger {
         &self,
         broker: &str,
         subject: &str,
-        msgs: Vec<SubjectMessage>,
+        msgs: Vec<OutputMessage>,
     ) -> anyhow::Result<()> {
         for msg in msgs.into_iter() {
             if let Err(e) = self.send_with_broker(broker, subject, msg).await {
@@ -216,7 +214,7 @@ impl MessageTrigger {
     async fn handle_message(
         &self,
         config: &MessageTriggerConfig,
-        message: SubjectMessage,
+        message: InputMessage,
     ) -> anyhow::Result<()> {
         let (instance, mut store) = self.engine.prepare_instance(&config.component).await?;
         println!("Setup instance");
@@ -226,25 +224,12 @@ impl MessageTrigger {
             })?;
         println!("engine ready");
 
-        let metadata = message
-            .message
-            .metadata
-            .iter()
-            .map(|v| InternalMetadataParam {
-                name: &v.name,
-                value: v.value.as_slice(),
-            })
-            .collect::<Vec<_>>();
-
         let original_subject = &message.subject;
 
-        let message = InternalSubjectMessageParam {
-            subject: message.subject.as_deref(),
-            message: InternalMessageParam {
-                body: message.message.body.as_deref(),
-                metadata: metadata.as_slice(),
-            },
-            broker: Some(&config.broker),
+        let message = InternalMessage {
+            subject: &message.subject,
+            message: &message.message,
+            broker: &config.broker,
         };
 
         println!("ready for wasm");
@@ -269,14 +254,12 @@ impl MessageTrigger {
                 .await?
             }
             (Outcome::Publish(msgs), None) => {
-                if let Some(default_subject) = original_subject {
-                    self.send_all_with_broker(
-                        &config.broker,
-                        default_subject,
-                        msgs.into_iter().map(|v| v.into()).collect(),
-                    )
-                    .await?
-                }
+                self.send_all_with_broker(
+                    &config.broker,
+                    original_subject,
+                    msgs.into_iter().map(|v| v.into()).collect(),
+                )
+                .await?
             }
             _ => {}
         }

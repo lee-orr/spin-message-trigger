@@ -14,45 +14,28 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         struct Messages;
 
-        impl From<spin_message_types::Metadata> for messages::InternalMetadata {
-            fn from(value: spin_message_types::Metadata) -> Self {
+        impl From<spin_message_types::InputMessage> for messages::InternalMessage {
+            fn from(value: spin_message_types::InputMessage) -> Self {
                 Self {
-                    name: value.name,
-                    value: value.value,
+                    message: value.message,
+                    broker: value.broker,
+                    subject: value.subject
                 }
             }
         }
 
-        impl From<messages::InternalMetadata> for spin_message_types::Metadata {
-            fn from(value: messages::InternalMetadata) -> Self {
-                Self {
-                    name: value.name,
-                    value: value.value,
-                }
-            }
-
-        }
-
-        impl From<spin_message_types::Message> for messages::InternalMessage {
-            fn from(value: spin_message_types::Message) -> Self {
-                Self {
-                    body: value.body,
-                    metadata: value.metadata.into_iter().map(|v| v.into()).collect(),
-                }
-            }
-        }
-
-        impl From<messages::InternalMessage> for spin_message_types::Message {
+        impl From<messages::InternalMessage> for spin_message_types::InputMessage {
             fn from(value: messages::InternalMessage) -> Self {
                 Self {
-                    body: value.body,
-                    metadata: value.metadata.into_iter().map(|v| v.into()).collect(),
+                    message: value.message,
+                    broker: value.broker,
+                    subject: value.subject
                 }
             }
         }
 
-        impl From<spin_message_types::SubjectMessage> for messages::InternalSubjectMessage {
-            fn from(value: spin_message_types::SubjectMessage) -> Self {
+        impl From<spin_message_types::OutputMessage> for messages::InternalOutputMessage {
+            fn from(value: spin_message_types::OutputMessage) -> Self {
                 Self {
                     message: value.message.into(),
                     subject: value.subject,
@@ -61,8 +44,8 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl From<messages::InternalSubjectMessage> for spin_message_types::SubjectMessage {
-            fn from(value: messages::InternalSubjectMessage) -> Self {
+        impl From<messages::InternalOutputMessage> for spin_message_types::OutputMessage {
+            fn from(value: messages::InternalOutputMessage) -> Self {
                 Self {
                     message: value.message.into(),
                     subject: value.subject,
@@ -71,8 +54,8 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl From<Result<Vec<spin_message_types::SubjectMessage>,spin_message_types::MessageError>> for messages::Outcome {
-            fn from(value: Result<Vec<spin_message_types::SubjectMessage>,spin_message_types::MessageError>) -> Self {
+        impl From<Result<Vec<spin_message_types::OutputMessage>,spin_message_types::MessageError>> for messages::Outcome {
+            fn from(value: Result<Vec<spin_message_types::OutputMessage>,spin_message_types::MessageError>) -> Self {
                 match value {
                     Ok(vec) => messages::Outcome::Publish(vec.into_iter().map(|v| v.into()).collect()),
                     Err(err) => messages::Outcome::Error(err.to_string())
@@ -81,8 +64,8 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         impl messages::Messages for Messages {
-            fn handle_message(message: messages::InternalSubjectMessage) -> messages::Outcome {
-                let message : spin_message_types::SubjectMessage = message.into();
+            fn handle_message(message: messages::InternalMessage) -> messages::Outcome {
+                let message : spin_message_types::InputMessage = message.into();
                 #func
 
                 #func_name(message).into()

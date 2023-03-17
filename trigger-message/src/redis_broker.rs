@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashMap;
 use futures::StreamExt;
-use spin_message_types::{Message, SubjectMessage};
+use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::mpsc;
 
 use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
@@ -15,13 +15,14 @@ pub struct Subscription(Sender);
 
 #[derive(Clone, Debug)]
 pub struct RedisBroker {
+    name: String,
     map: Arc<DashMap<String, Subscription>>,
     subscription_handler: mpsc::Sender<(String, Sender)>,
-    publish_handler: mpsc::Sender<(String, SubjectMessage)>,
+    publish_handler: mpsc::Sender<(String, OutputMessage)>,
 }
 
 impl RedisBroker {
-    pub fn new(address: String) -> Self {
+    pub fn new(address: String, name: String) -> Self {
         let (subscription_handler, sub_rx) = mpsc::channel(100);
         let (publish_handler, pub_rx) = mpsc::channel(100);
         tokio::spawn(async move {
@@ -31,6 +32,7 @@ impl RedisBroker {
         });
 
         Self {
+            name,
             map: Default::default(),
             subscription_handler,
             publish_handler,
@@ -40,7 +42,7 @@ impl RedisBroker {
     async fn setup_client(
         address: String,
         mut sub_rx: mpsc::Receiver<(String, Sender)>,
-        mut pub_rx: mpsc::Receiver<(String, SubjectMessage)>,
+        mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
     ) -> Result<()> {
         let client = redis::Client::open(address)?;
         {
@@ -49,7 +51,7 @@ impl RedisBroker {
                 if let Ok(mut connection) = cloned.get_tokio_connection().await {
                     println!("Publish redis connection ready");
                     while let Some((subject, message)) = pub_rx.recv().await {
-                        let body = message.message.body.unwrap_or_default();
+                        let body = message.message;
                         println!("Publishing to {subject}");
                         let result: RedisFuture<Value> = connection.publish(subject.clone(), body);
                         match result.await {
@@ -71,12 +73,9 @@ impl RedisBroker {
                         let mut msgs = pubsub.on_message();
                         while let Some(msg) = msgs.next().await {
                             let body = msg.get_payload_bytes().to_owned();
-                            let _ = sender.send(SubjectMessage {
-                                message: Message {
-                                    body: Some(body),
-                                    ..Default::default()
-                                },
-                                subject: Some(subject.clone()),
+                            let _ = sender.send(InputMessage {
+                                message: body,
+                                subject: subject.clone(),
                                 ..Default::default()
                             });
                         }
@@ -91,7 +90,11 @@ impl RedisBroker {
 
 #[async_trait]
 impl MessageBroker for RedisBroker {
-    async fn publish(&self, message: SubjectMessage) -> Result<()> {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    async fn publish(&self, message: OutputMessage) -> Result<()> {
         let subject = &message
             .subject
             .as_deref()

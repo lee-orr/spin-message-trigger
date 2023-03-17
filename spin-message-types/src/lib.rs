@@ -9,20 +9,15 @@ pub mod export;
 pub mod import;
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
-pub struct Metadata {
-    pub name: String,
-    pub value: Vec<u8>,
+pub struct InputMessage {
+    pub message: Vec<u8>,
+    pub subject: String,
+    pub broker: String
 }
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
-pub struct Message {
-    pub body: Option<Vec<u8>>,
-    pub metadata: Vec<Metadata>,
-}
-
-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
-pub struct SubjectMessage {
-    pub message: Message,
+pub struct OutputMessage {
+    pub message: Vec<u8>,
     pub subject: Option<String>,
     pub broker: Option<String>,
 }
