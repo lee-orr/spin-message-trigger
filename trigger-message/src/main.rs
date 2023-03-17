@@ -8,6 +8,7 @@ use anyhow::{bail, Error};
 use broker::MessageBroker;
 use clap::Parser;
 use gateway::spawn_gateway;
+use nats_broker::NatsConnectionInfo;
 use serde::{Deserialize, Serialize};
 use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecutor};
 use std::{collections::HashMap, sync::Arc};
@@ -42,7 +43,7 @@ pub enum BrokerTypeConfig {
     #[default]
     InMemoryBroker,
     Redis(String),
-    Nats(String),
+    Nats(NatsConnectionInfo),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -135,8 +136,8 @@ impl TriggerExecutor for MessageTrigger {
                         BrokerTypeConfig::Redis(address) => {
                             Arc::new(redis_broker::RedisBroker::new(address.clone(), key.clone()))
                         }
-                        BrokerTypeConfig::Nats(address) => {
-                            Arc::new(nats_broker::NatsBroker::new(address.clone(), key.clone()))
+                        BrokerTypeConfig::Nats(options) => {
+                            Arc::new(nats_broker::NatsBroker::new(options.clone(), key.clone()))
                         }
                     };
                     if let GatewayConfig::Http { port, websockets } = gateway {

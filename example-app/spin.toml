@@ -13,8 +13,8 @@ broker_type = "InMemoryBroker"
 [trigger.brokers.test.gateway.Http]
 port = 3_005
 
-[trigger.brokers.secondary]
-broker_type = { Nats = "nats" }
+[trigger.brokers.secondary.broker_type.Nats]
+addresses = ["nats"]
 
 
 [trigger.brokers.secondary.gateway.Http]

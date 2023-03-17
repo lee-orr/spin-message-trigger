@@ -1,9 +1,11 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc, time::Duration};
 
 use anyhow::Result;
+use async_nats::{ConnectOptions, ServerAddr};
 use async_trait::async_trait;
 use dashmap::DashMap;
 use futures::StreamExt;
+use serde::{Deserialize, Serialize};
 use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::mpsc;
 
@@ -20,13 +22,107 @@ pub struct NatsBroker {
     publish_handler: mpsc::Sender<(String, OutputMessage)>,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum NatsAuth {
+    Token(String),
+    User { user: String, password: String },
+    NKey(String),
+    Jwt { nkey_seed: String, jwt: String },
+    CredentialsFile(String),
+    CredentialsString(String),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClientCertInfo {
+    pub certificate: String,
+    pub key: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct NatsConnectionInfo {
+    tls: Option<bool>,
+    ping_interval: Option<u64>,
+    addresses: Vec<String>,
+    auth: Option<NatsAuth>,
+    root_certificate: Option<String>,
+    client_certificate: Option<ClientCertInfo>,
+    client_name: Option<String>,
+}
+
+impl NatsConnectionInfo {
+    pub async fn connect(&self) -> Result<async_nats::Client> {
+        let mut options = if let Some(auth) = &self.auth {
+            match auth {
+                NatsAuth::Token(token) => ConnectOptions::with_token(token.clone()),
+                NatsAuth::User { user, password } => {
+                    ConnectOptions::with_user_and_password(user.clone(), password.clone())
+                }
+                NatsAuth::NKey(seed) => ConnectOptions::with_nkey(seed.clone()),
+                NatsAuth::Jwt { nkey_seed, jwt } => {
+                    let key_pair = std::sync::Arc::new(nkeys::KeyPair::from_seed(nkey_seed)?);
+
+                    ConnectOptions::with_jwt(jwt.clone(), move |nonce| {
+                        let key_pair = key_pair.clone();
+                        async move { key_pair.sign(&nonce).map_err(async_nats::AuthError::new) }
+                    })
+                }
+                NatsAuth::CredentialsFile(creds) => {
+                    ConnectOptions::with_credentials_file(creds.into()).await?
+                }
+                NatsAuth::CredentialsString(creds) => ConnectOptions::with_credentials(creds)?,
+            }
+        } else {
+            ConnectOptions::new()
+        };
+
+        if let Some(tls) = self.tls {
+            options = options.require_tls(tls);
+        }
+
+        if let Some(ping) = self.ping_interval {
+            options = options.ping_interval(Duration::from_millis(ping));
+        }
+
+        if let Some(client_name) = &self.client_name {
+            options = options.name(client_name.clone());
+        }
+
+        if let Some(path) = &self.root_certificate {
+            let path = Path::new(path);
+            let path = path.to_path_buf();
+            options = options.add_root_certificates(path);
+        }
+
+        if let Some(ClientCertInfo { certificate, key }) = &self.client_certificate {
+            let certificate = Path::new(certificate);
+            let certificate = certificate.to_path_buf();
+            let key = Path::new(key);
+            let key = key.to_path_buf();
+            options = options.add_client_certificate(certificate, key);
+        }
+
+        let addresses: Vec<ServerAddr> = self
+            .addresses
+            .iter()
+            .filter_map(|v| {
+                if let Ok(v) = v.parse::<ServerAddr>() {
+                    Some(v)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Ok(options.connect(addresses).await?)
+    }
+}
+
 impl NatsBroker {
-    pub fn new(address: String, name: String) -> Self {
+    pub fn new(options: NatsConnectionInfo, name: String) -> Self {
         let (subscription_handler, sub_rx) = mpsc::channel(100);
         let (publish_handler, pub_rx) = mpsc::channel(100);
         let n = name.clone();
         tokio::spawn(async move {
-            if let Err(e) = NatsBroker::setup_client(n, address, sub_rx, pub_rx).await {
+            if let Err(e) = NatsBroker::setup_client(n, options, sub_rx, pub_rx).await {
                 eprintln!("Nats Error: {e}");
             }
         });
@@ -41,12 +137,12 @@ impl NatsBroker {
 
     async fn setup_client(
         name: String,
-        address: String,
+        options: NatsConnectionInfo,
         mut sub_rx: mpsc::Receiver<(String, Sender)>,
         mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
     ) -> Result<()> {
-        let client = async_nats::connect(&address).await?;
-        println!("Connected to NATS at {address}");
+        let client = options.connect().await?;
+        println!("Connected to NATS for {name}");
         {
             let client = client.clone();
             tokio::spawn(async move {
