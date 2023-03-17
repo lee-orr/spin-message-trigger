@@ -42,7 +42,7 @@ pub struct BrokerConfig {
 pub enum BrokerTypeConfig {
     #[default]
     InMemoryBroker,
-    Redis(String)
+    Redis(String),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
