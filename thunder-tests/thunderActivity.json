@@ -1,0 +1,21 @@
+[
+  {
+    "_id": "ed8a000e-9af7-4427-81d1-95b777d0ca0b",
+    "colId": "history",
+    "containerId": "",
+    "name": "http://localhost:3005/publish/hello.there",
+    "url": "http://localhost:3005/publish/hello.there",
+    "method": "POST",
+    "sortNum": 0,
+    "created": "2023-03-17T16:53:49.789Z",
+    "modified": "2023-03-17T16:53:49.789Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "text",
+      "raw": "Test Content",
+      "form": []
+    },
+    "tests": []
+  }
+]

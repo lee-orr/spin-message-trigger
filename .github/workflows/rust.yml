@@ -37,10 +37,15 @@ jobs:
     needs: 
       - test
       - clippy
+      - fmt
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
+
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --bin trigger-message --release
+
+
+
