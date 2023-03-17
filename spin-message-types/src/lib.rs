@@ -12,7 +12,7 @@ pub mod import;
 pub struct InputMessage {
     pub message: Vec<u8>,
     pub subject: String,
-    pub broker: String
+    pub broker: String,
 }
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]

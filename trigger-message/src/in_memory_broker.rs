@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashMap;
-use spin_message_types::{OutputMessage, InputMessage};
+use spin_message_types::{InputMessage, OutputMessage};
 use wildmatch::*;
 
 use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
@@ -21,7 +21,7 @@ impl InMemoryBroker {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            map: Default::default()
+            map: Default::default(),
         }
     }
 }
@@ -69,7 +69,7 @@ impl MessageBroker for InMemoryBroker {
 #[cfg(test)]
 mod test {
     use crate::broker::MessageBroker;
-    use spin_message_types::{InputMessage, OutputMessage};
+    use spin_message_types::OutputMessage;
 
     use super::InMemoryBroker;
 
@@ -77,7 +77,7 @@ mod test {
     async fn a_published_message_gets_recieved_by_a_subscriber() {
         let message = OutputMessage {
             subject: Some("message.test".to_string()),
-            message:"test".as_bytes().to_owned(),
+            message: "test".as_bytes().to_owned(),
             broker: None,
         };
 

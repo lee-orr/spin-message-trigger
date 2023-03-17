@@ -1,6 +1,3 @@
-use anyhow::bail;
-use std::future::Future;
-
 use crate::{InputMessage, OutputMessage};
 
 use self::messages::{InternalMessage, InternalOutputMessage};
@@ -14,7 +11,7 @@ pub mod messages {
 impl From<InternalOutputMessage> for OutputMessage {
     fn from(value: InternalOutputMessage) -> Self {
         Self {
-            message: value.message.into(),
+            message: value.message,
             subject: value.subject,
             broker: value.broker,
         }
@@ -26,7 +23,7 @@ impl<'a> From<InternalMessage<'a>> for InputMessage {
         Self {
             message: value.message.to_vec(),
             subject: value.subject.to_string(),
-            broker: value.broker.to_string()
+            broker: value.broker.to_string(),
         }
     }
 }
