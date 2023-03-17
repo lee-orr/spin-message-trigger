@@ -8,27 +8,26 @@ use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::mpsc;
 
 use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
-use redis::*;
 
 #[derive(Clone, Debug)]
 pub struct Subscription(Sender);
 
 #[derive(Clone, Debug)]
-pub struct RedisBroker {
+pub struct NatsBroker {
     name: String,
     map: Arc<DashMap<String, Subscription>>,
     subscription_handler: mpsc::Sender<(String, Sender)>,
     publish_handler: mpsc::Sender<(String, OutputMessage)>,
 }
 
-impl RedisBroker {
+impl NatsBroker {
     pub fn new(address: String, name: String) -> Self {
         let (subscription_handler, sub_rx) = mpsc::channel(100);
         let (publish_handler, pub_rx) = mpsc::channel(100);
         let n = name.clone();
         tokio::spawn(async move {
-            if let Err(e) = RedisBroker::setup_client(n, address, sub_rx, pub_rx).await {
-                eprintln!("Redis Error: {e}");
+            if let Err(e) = NatsBroker::setup_client(n, address, sub_rx, pub_rx).await {
+                eprintln!("Nats Error: {e}");
             }
         });
 
@@ -46,42 +45,37 @@ impl RedisBroker {
         mut sub_rx: mpsc::Receiver<(String, Sender)>,
         mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
     ) -> Result<()> {
-        let client = redis::Client::open(address)?;
+        let client = async_nats::connect(&address).await?;
+        println!("Connected to NATS at {address}");
         {
-            let cloned = client.clone();
+            let client = client.clone();
             tokio::spawn(async move {
-                if let Ok(mut connection) = cloned.get_tokio_connection().await {
-                    println!("Publish redis connection ready");
-                    while let Some((subject, message)) = pub_rx.recv().await {
-                        let body = message.message;
-                        println!("Publishing to {subject}");
-                        let result: RedisFuture<Value> = connection.publish(subject.clone(), body);
-                        match result.await {
-                            Ok(_) => println!("Published to {subject}"),
-                            Err(e) => eprintln!("Failed to publish - {e:?}"),
-                        }
+                while let Some((subject, message)) = pub_rx.recv().await {
+                    let body = message.message;
+                    println!("Publishing on NATS to {subject}");
+                    let result = client.publish(subject.clone(), body.into());
+                    match result.await {
+                        Ok(_) => println!("Published on NATS to {subject}"),
+                        Err(e) => eprintln!("Failed to publish on NATS - {e:?}"),
                     }
                 }
             });
         }
 
         while let Some((subject, sender)) = sub_rx.recv().await {
-            let cloned = client.clone();
+            let client = client.clone();
             let name = name.to_string();
             tokio::spawn(async move {
-                if let Ok(connection) = cloned.get_tokio_connection().await {
-                    println!("Subscribed to redis: {subject}");
-                    let mut pubsub = connection.into_pubsub();
-                    if let Ok(()) = pubsub.psubscribe(subject.clone()).await {
-                        let mut msgs = pubsub.on_message();
-                        while let Some(msg) = msgs.next().await {
-                            let body = msg.get_payload_bytes().to_owned();
-                            let _ = sender.send(InputMessage {
-                                message: body,
-                                subject: subject.clone(),
-                                broker: name.clone(),
-                            });
-                        }
+                if let Ok(mut pubsub) = client.subscribe(subject.clone()).await {
+                    println!("Subscribed to async_nats: {subject}");
+                    while let Some(msg) = pubsub.next().await {
+                        println!("Received NATS Message on {subject}");
+                        let body = msg.payload.to_vec();
+                        let _ = sender.send(InputMessage {
+                            message: body,
+                            subject: subject.clone(),
+                            broker: name.clone(),
+                        });
                     }
                 }
             });
@@ -92,7 +86,7 @@ impl RedisBroker {
 }
 
 #[async_trait]
-impl MessageBroker for RedisBroker {
+impl MessageBroker for NatsBroker {
     fn name(&self) -> &str {
         &self.name
     }

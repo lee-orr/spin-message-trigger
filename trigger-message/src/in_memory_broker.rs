@@ -40,7 +40,7 @@ impl MessageBroker for InMemoryBroker {
         let message = InputMessage {
             message: message.message,
             subject: subject.to_string(),
-            broker: "".to_string(),
+            broker: self.name.clone(),
         };
         for r in self
             .map

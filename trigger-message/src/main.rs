@@ -1,6 +1,7 @@
 mod broker;
 mod gateway;
 mod in_memory_broker;
+mod nats_broker;
 mod redis_broker;
 
 use anyhow::{bail, Error};
@@ -41,6 +42,7 @@ pub enum BrokerTypeConfig {
     #[default]
     InMemoryBroker,
     Redis(String),
+    Nats(String),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -132,6 +134,9 @@ impl TriggerExecutor for MessageTrigger {
                         }
                         BrokerTypeConfig::Redis(address) => {
                             Arc::new(redis_broker::RedisBroker::new(address.clone(), key.clone()))
+                        }
+                        BrokerTypeConfig::Nats(address) => {
+                            Arc::new(nats_broker::NatsBroker::new(address.clone(), key.clone()))
                         }
                     };
                     if let GatewayConfig::Http { port, websockets } = gateway {

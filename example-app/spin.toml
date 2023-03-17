@@ -14,7 +14,7 @@ broker_type = "InMemoryBroker"
 port = 3_005
 
 [trigger.brokers.secondary]
-broker_type = { Redis = "redis://redis:6379" }
+broker_type = { Nats = "nats" }
 
 
 [trigger.brokers.secondary.gateway.Http]
@@ -28,8 +28,8 @@ source = "../target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "test"
-subscription = "hello*"
-result = { default_broker = "secondary", default_subject = "goodbye" }
+subscription = "hello.*"
+result = { default_broker = "secondary", default_subject = "good.bye" }
 [component.build]
 command = "cargo build --target wasm32-wasi --release"
 
@@ -39,7 +39,7 @@ source = "../target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "secondary"
-subscription = "goodbye"
+subscription = "good.bye"
 result = { default_broker = "test", default_subject = "sink" }
 [component.build]
 command = "cargo build --target wasm32-wasi --release"
