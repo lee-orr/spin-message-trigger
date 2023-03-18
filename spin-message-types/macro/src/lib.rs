@@ -75,3 +75,26 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
     )
     .into()
 }
+
+#[proc_macro_attribute]
+pub fn json_http_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let func = syn::parse_macro_input!(item as syn::ItemFn);
+    let func_name = &func.sig.ident;
+
+    quote!(
+        use spin_message_types::import::message_component;
+
+        #[message_component]
+        fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
+            #func
+
+            if let Ok(http) = HttpRequest::from_json_message(&message) {
+                let result : HttpResponse = #func_name(http);
+                Ok(result.to_json_response(message.subject.as_str()))
+            } else {
+                Err(MessageError("Couldn't parse http request".to_string()))
+            }
+        }        
+    )
+    .into()
+}

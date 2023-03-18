@@ -25,33 +25,32 @@ websockets = "TextBody"
 
 [[component]]
 id = "hello"
-source = "../target/wasm32-wasi/release/example_app.wasm"
+source = "./target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "test"
 subscription = "hello.*"
 result = { default_broker = "secondary", default_subject = "good.bye" }
 [component.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasi --release -p example-app"
 
 [[component]]
 id = "goodbye"
-source = "../target/wasm32-wasi/release/example_app.wasm"
+source = "./target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "secondary"
 subscription = "good.bye"
 result = { default_broker = "test", default_subject = "sink" }
 [component.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasi -p example-app --release"
 
 [[component]]
 id = "request"
-source = "../target/wasm32-wasi/release/example_app.wasm"
+source = "./target/wasm32-wasi/release/request_response_demo.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "test"
 subscription = "request.*"
-result = { default_broker = "test", default_subject = "sink" }
 [component.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasi --release -p request-response-demo"

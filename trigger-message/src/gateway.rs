@@ -141,7 +141,9 @@ async fn request_handler(
         let timeout = state.timeout.unwrap_or(2000);
         let timeout = Duration::from_millis(timeout);
 
-        let subject = format!("request.{request_id}.{method}.{path}");
+        let subject_base = format!("{request_id}.{method}.{path}");
+        let subject = format!("request.{subject_base}");
+        let response_subject = format!("response.{subject_base}");
 
         let request = HttpRequest {
             method: method.clone(),
@@ -164,7 +166,7 @@ async fn request_handler(
             }
         };
 
-        if let (Some(body), Ok(mut subscribe)) = (body, broker.subscribe(&subject).await) {
+        if let (Some(body), Ok(mut subscribe)) = (body, broker.subscribe(&response_subject).await) {
             match broker
                 .publish(OutputMessage {
                     subject: Some(subject),
@@ -175,6 +177,7 @@ async fn request_handler(
             {
                 Ok(_) => {
                     if let Ok(Ok(result)) = tokio::time::timeout(timeout, subscribe.recv()).await {
+                        println!("Got Response: {result:?}");
                         let result = match serializer {
                             GatewayRequestResponseConfig::Messagepack => {
                                 rmp_serde::from_slice::<HttpResponse>(&result.message).ok()

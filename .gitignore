@@ -12,3 +12,4 @@ Cargo.lock
 
 trigger-message.json
 trigger-message-*.gz
+.spin
