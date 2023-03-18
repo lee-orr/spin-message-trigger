@@ -23,3 +23,4 @@ wildmatch = "2"
 redis = { version = "0.22", features = [ "tokio-comp" ] }
 async-nats = "0.28"
 nkeys = "0.2"
+ulid = "1"

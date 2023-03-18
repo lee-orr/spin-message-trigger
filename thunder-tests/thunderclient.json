@@ -17,5 +17,24 @@
       "form": []
     },
     "tests": []
+  },
+  {
+    "_id": "5ef45c9d-896d-4bbe-8b81-6aacd944d1c1",
+    "colId": "95ee45de-bb47-4c15-ba5b-ad1358bc1ec8",
+    "containerId": "",
+    "name": "Default Request",
+    "url": "http://localhost:3005/request/hello.there",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-03-18T16:48:05.153Z",
+    "modified": "2023-03-18T16:48:28.805Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"here\": \"I am\"\n}",
+      "form": []
+    },
+    "tests": []
   }
 ]

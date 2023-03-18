@@ -56,12 +56,21 @@ pub enum WebsocketConfig {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub enum GatewayRequestResponseConfig {
+    #[default]
+    Messagepack,
+    Json,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub enum GatewayConfig {
     #[default]
     None,
     Http {
         port: u16,
         websockets: Option<WebsocketConfig>,
+        request_response: Option<GatewayRequestResponseConfig>,
+        timeout: Option<u64>,
     },
 }
 
@@ -140,8 +149,20 @@ impl TriggerExecutor for MessageTrigger {
                             Arc::new(nats_broker::NatsBroker::new(options.clone(), key.clone()))
                         }
                     };
-                    if let GatewayConfig::Http { port, websockets } = gateway {
-                        tokio::spawn(spawn_gateway(*port, websockets.clone(), broker.clone()));
+                    if let GatewayConfig::Http {
+                        port,
+                        websockets,
+                        request_response,
+                        timeout,
+                    } = gateway
+                    {
+                        tokio::spawn(spawn_gateway(
+                            *port,
+                            websockets.clone(),
+                            broker.clone(),
+                            request_response.clone(),
+                            *timeout,
+                        ));
                     }
                     println!("Broker and gateway for key {key} complete");
                     (key, broker)

@@ -1,36 +1,46 @@
 use axum::{
-    body::Bytes,
+    body::{BoxBody, Bytes},
     extract::{
         ws::{Message as WsMessage, WebSocket, WebSocketUpgrade},
         Path, State,
     },
-    http::StatusCode,
+    http::{Response, StatusCode, Uri, Method, HeaderMap},
     response::IntoResponse,
-    routing::{get, post},
+    routing::{any, get, post},
     Router,
 };
 use serde::Serialize;
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use spin_message_types::OutputMessage;
+use spin_message_types::{HttpRequest, HttpResponse, OutputMessage};
 
-use crate::{broker::MessageBroker, WebsocketConfig};
+use crate::{broker::MessageBroker, GatewayRequestResponseConfig, WebsocketConfig};
 
 #[derive(Clone)]
 struct GatewayState {
     broker: Arc<dyn MessageBroker>,
     websockets: Option<WebsocketConfig>,
+    request_response: Option<GatewayRequestResponseConfig>,
+    timeout: Option<u64>,
 }
 
 pub async fn spawn_gateway(
     port: u16,
     websockets: Option<WebsocketConfig>,
     broker: Arc<dyn MessageBroker>,
+    request_response: Option<GatewayRequestResponseConfig>,
+    timeout: Option<u64>,
 ) {
     let app = Router::new()
         .route("/publish/*subject", post(publish))
         .route("/subscribe/*subject", get(subscribe))
-        .with_state(Arc::new(GatewayState { broker, websockets }));
+        .route("/request/*path", any(request_handler))
+        .with_state(Arc::new(GatewayState {
+            broker,
+            websockets,
+            request_response,
+            timeout,
+        }));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("Listening on {}", addr);
@@ -114,5 +124,81 @@ async fn handle_websocket(
                 }
             }
         }
+    }
+}
+
+async fn request_handler(
+    Path(path): Path<String>,
+    State(state): State<Arc<GatewayState>>,
+    uri: Uri,
+    method: Method,
+    headers: HeaderMap,
+    bytes: Bytes,
+) -> Response<BoxBody> {
+    if let Some(serializer) = &state.request_response {
+        let broker = &state.broker;
+        let request_id = ulid::Ulid::new();
+        let timeout = state.timeout.unwrap_or(2000);
+        let timeout = Duration::from_millis(timeout);
+
+        let subject = format!("request.{request_id}.{method}.{path}");
+
+        let request = HttpRequest {
+            method: method.clone(),
+            headers: headers.clone(),
+            uri: uri.clone(),
+            body: bytes.to_vec(),
+        };
+
+        let body = match serializer {
+            GatewayRequestResponseConfig::Messagepack => {
+                let mut buf = Vec::new();
+                if let Ok(()) = request.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
+                    Some(buf)
+                } else {
+                    None
+                }
+            }
+            GatewayRequestResponseConfig::Json => {
+                serde_json::to_string(&request).ok().map(|v| v.into_bytes())
+            }
+        };
+
+        if let (Some(body), Ok(mut subscribe)) = (body, broker.subscribe(&subject).await) {
+            match broker
+                .publish(OutputMessage {
+                    subject: Some(subject),
+                    message: body,
+                    broker: None,
+                })
+                .await
+            {
+                Ok(_) => {
+                    if let Ok(Ok(result)) = tokio::time::timeout(timeout, subscribe.recv()).await {
+                        let result = match serializer {
+                            GatewayRequestResponseConfig::Messagepack => {
+                                rmp_serde::from_slice::<HttpResponse>(&result.message).ok()
+                            }
+                            GatewayRequestResponseConfig::Json => {
+                                serde_json::from_slice::<HttpResponse>(&result.message).ok()
+                            }
+                        };
+                        if let Some(result) = result {
+                            (result.status, result.headers, result.body).into_response()
+                        } else {
+                            (StatusCode::INTERNAL_SERVER_ERROR, "couldn't process result")
+                                .into_response()
+                        }
+                    } else {
+                        (StatusCode::GATEWAY_TIMEOUT, "response timed out").into_response()
+                    }
+                }
+                Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "couldn't publish").into_response(),
+            }
+        } else {
+            (StatusCode::INTERNAL_SERVER_ERROR, "couldn't subscribe").into_response()
+        }
+    } else {
+        (StatusCode::BAD_REQUEST, "request-response is not supported").into_response()
     }
 }
