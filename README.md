@@ -10,7 +10,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
     - NATS
 - Named brokers - allowing multiple brokers of the same or different types in a single application
     - this is designed to support usecases such as separating the publishing of internal domain events & public events meant for others to consume
-- an HTTP gateway server for publishing messages to the broker
+- an HTTP gateway server for publishing messages to the broker, as well as some request/response support
 - a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker)
 - Trigger a Spin component from a message on a subscribed channel
 - Publish messages from the Spin component - defaulting to the same broker & subject, but optionally setting other defaults or manually setting the broker & subject for each message
@@ -30,7 +30,7 @@ This is a WIP
 This repository is set up to function as either a Dev Container (using VsCode) or a Docker Dev Environment. This means you can use Github workspaces to get it set up automatically, or use VSCodes "Clone Repository into Volume" option to clone the repo & build the dev environment for you.
 
 Once you are running, you can use the "update-plugin.sh" script to build the plugin and install it on spin.
-Then - go to the example app folder and run "spin up" to launch it.
+Then - run "spin build" & "spin up" in the workspace root to launch it
 
 If you are using VS Code, you'll notice there are two extensions installed:
 - Thunder client, which lets you make HTTP requests.
@@ -42,4 +42,5 @@ If you are using VS Code, you'll notice there are two extensions installed:
 ### Repo Structure
 - The `trigger-message` crate contains the spin plugin, including the message broker interfaces
 - The `spin-message-types` crate contains the `.wit` definition, some shared file types to allow for easy creation of messages, and a `#[message_component]` macro for setting up the trigger in your app
-- The example app contains a single wasm file, demonstrating simple use, and showcasing the use of multiple brokers within a single file
+- The `example-app` create demonstrates simple use, and showcasing the use of multiple brokers within a single file
+- the `request-response-demo` crate demonstrates creation of a json-based http request/response handler (the body is still a `vec<u8>`)
