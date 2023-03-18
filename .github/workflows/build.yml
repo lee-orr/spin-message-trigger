@@ -108,6 +108,12 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: bash
         run: echo "RELEASE_VERSION=precanary" >> $GITHUB_ENV
+      
+      - name: Set Version in Pluginify File
+        uses: bluwy/substitute-string-action@v2.0.1
+        with:
+          _input-file: ./spin-pluginify.toml
+          "0.0.1": ${{ env.RELEASE_VERSION }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v3
