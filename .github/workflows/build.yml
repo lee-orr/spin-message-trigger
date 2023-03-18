@@ -9,6 +9,7 @@ permissions:
 
 env:
   PROGRAM_NAME: trigger-message
+  REPO: lee-orr/spin-message-trigger
 
 jobs:
   build:
@@ -38,6 +39,26 @@ jobs:
       - name: Install pluginify
         shell: bash
         run: spin plugins install --url https://github.com/itowlson/spin-pluginify/releases/download/canary/pluginify.json --yes
+
+      - name: set the release version (tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: echo "RELEASE_VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+      - name: set the release version (main)
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        run: echo "RELEASE_VERSION=canary" >> $GITHUB_ENV
+      - name: set the release version (TEST TEST TEST)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "RELEASE_VERSION=precanary" >> $GITHUB_ENV
+      
+      - name: Set Version in Pluginify File
+        uses: bluwy/substitute-string-action@v2.0.1
+        with:
+          _input-file: ./spin-pluginify.toml
+          "0.0.1": ${{ env.RELEASE_VERSION }}
+        
       - name: Set up for cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
@@ -45,6 +66,7 @@ jobs:
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
+          
       - name: Build plugin binary
         run: cargo build --release --target ${{ matrix.config.target }}
       - name: Copy plugin binary to standard location
@@ -93,7 +115,7 @@ jobs:
         run: ls -R
       - name: pluginify it
         run: |
-          spin pluginify --merge --release-url-base https://github.com/fermyon/spin-trigger-sqs/releases/download/${{ env.RELEASE_VERSION }}/ >${{ env.PROGRAM_NAME }}.json
+          spin pluginify --merge --release-url-base https://github.com/${env.REPO}/releases/download/${{ env.RELEASE_VERSION }}/ >${{ env.PROGRAM_NAME }}.json
       - name: Display merged manifest
         run: cat ${{ env.PROGRAM_NAME }}.json
 
