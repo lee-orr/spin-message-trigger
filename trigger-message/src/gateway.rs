@@ -4,7 +4,7 @@ use axum::{
         ws::{Message as WsMessage, WebSocket, WebSocketUpgrade},
         Path, State,
     },
-    http::{Response, StatusCode, Uri, Method, HeaderMap},
+    http::{HeaderMap, Method, Response, StatusCode, Uri},
     response::IntoResponse,
     routing::{any, get, post},
     Router,

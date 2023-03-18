@@ -1,7 +1,7 @@
-use std::fmt::Display;
+use anyhow::{bail, Result};
 use http::{HeaderMap, Method, StatusCode, Uri};
 use serde::{Deserialize, Serialize};
-use anyhow::{Result, bail};
+use std::fmt::Display;
 
 #[cfg(feature = "export")]
 pub mod export;
@@ -73,15 +73,23 @@ impl HttpResponse {
         match serde_json::to_string(&self) {
             Ok(value) => {
                 println!("Setting response json {value}");
-                vec![OutputMessage { message: value.into_bytes(), subject: Some(subject.replace("request.", "response.").to_string()), ..Default::default()}]
-            },
+                vec![OutputMessage {
+                    message: value.into_bytes(),
+                    subject: Some(subject.replace("request.", "response.")),
+                    ..Default::default()
+                }]
+            }
             Err(_) => vec![],
         }
     }
     pub fn to_msgpack_response(&self, subject: &str) -> Vec<OutputMessage> {
         let mut buf = Vec::new();
         match self.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
-            Ok(_) => vec![OutputMessage { message: buf, subject: Some(subject.replace("request.", "response.").to_string()),  ..Default::default()}],
+            Ok(_) => vec![OutputMessage {
+                message: buf,
+                subject: Some(subject.replace("request.", "response.")),
+                ..Default::default()
+            }],
             Err(_) => vec![],
         }
     }

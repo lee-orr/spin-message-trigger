@@ -94,7 +94,7 @@ pub fn json_http_component(_attr: TokenStream, item: TokenStream) -> TokenStream
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))
             }
-        }        
+        }
     )
     .into()
 }
