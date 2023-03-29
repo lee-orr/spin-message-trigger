@@ -131,6 +131,34 @@ CredentialsFile = "/path/to/credentials/file"
 CredentialsString = "credentials string"
 ```
 
+### Gateway Definition
+Each broker can have an HTTP gateway defined for accessing it. The gateways expose 3 routes, based on the config:
+- `/publish/*subject*` - an HTTP post to this route will send the body of the request to the subject in the route.
+- `/subscribe/*subject*` - this is a route for WebSocket's to subscribe for updates on the subject, with support for pattern matching as provided by the broker.
+- `/request/*path*` - this route will serialize any request sent to it into a message, publish it to a specifically formatted subject, and then recieve a response from the first published message on another specifically formatted subject.
+
+If you wish to enable a gateway, you can define the gateway like so:
+```toml
+[trigger.brokers.BROKER_NAME.gateway.Http]
+# The port for the Http gateway
+port = 3005
+
+# An optional configuration for websockets - enabling their use for subscribing to subjects on the broker.
+websockets = "BinaryBody" | "TextBody" | "Messagepack" | "Json"
+# BinaryBody - will forward the message body directly as binary data
+# TextBody - will transform the message body to a utf8 string, and forward the string to the client
+# Messagepack - will serialize the input message object, containing the body (a vec of u8's), subject & broker name, to Messagepack 
+# Json - will serialize the input message object, containing the body (a vec of u8's), subject & broker name, to Json 
+
+# An optional configuration for enabling request/response patterns (with the /request/ route)
+request_response = "Messagepack" | "Json"
+# Messagepack - this will serialize the request into a Messagepack, publish it to the broker, and rely on messagepack for the response as well
+# Json - this will serialize the request into Json, publish it to the broker, and rely on json for the response as well
+```
+
+For request/response processes - the trigger currently publish messages to special subject names. This is a process one I'd like to change, but haven't had a chance yet.
+The subjects follow the following format: `request.*request_id*.*method*.*path*` and `response.*request_id*.*method*.*path*`. The request id is a Ulid generated per request.
+
 ### Component Definitions
 The component definition contains a trigger secion, which contains information used to determine triggering & responses for this component.
 Specifically - the `broker` field takes the name of the broker this compoment gets triggered by, the `subscription` field takes a string representing the subject being subscribed to - based on the conventions of the specific broker, and an optional `result` field that allows setting up a defaults for published result messages, allowing them to target a different default broker and subject.
