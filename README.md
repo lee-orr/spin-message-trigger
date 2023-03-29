@@ -89,7 +89,7 @@ It's configuration is more complex than the previous ones:
 addresses = ["nats"]
 
 # Optional - do the servers require tls. defaults to false
-tls = true | false
+tls = true
 
 # Optional - the interval for pings, in milliseconds.
 pint_interval = 10_000
@@ -144,7 +144,10 @@ If you wish to enable a gateway, you can define the gateway like so:
 port = 3005
 
 # An optional configuration for websockets - enabling their use for subscribing to subjects on the broker.
-websockets = "BinaryBody" | "TextBody" | "Messagepack" | "Json"
+websockets = "BinaryBody"
+
+# Possible Values:
+
 # BinaryBody - will forward the message body directly as binary data
 # TextBody - will transform the message body to a utf8 string, and forward the string to the client
 # Messagepack - will serialize the input message object, containing the body (a vec of u8's), subject & broker name, to Messagepack 
@@ -152,6 +155,9 @@ websockets = "BinaryBody" | "TextBody" | "Messagepack" | "Json"
 
 # An optional configuration for enabling request/response patterns (with the /request/ route)
 request_response = "Messagepack" | "Json"
+
+# Possible Values: 
+
 # Messagepack - this will serialize the request into a Messagepack, publish it to the broker, and rely on messagepack for the response as well
 # Json - this will serialize the request into Json, publish it to the broker, and rely on json for the response as well
 ```
