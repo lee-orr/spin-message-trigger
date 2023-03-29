@@ -154,7 +154,7 @@ websockets = "BinaryBody"
 # Json - will serialize the input message object, containing the body (a vec of u8's), subject & broker name, to Json 
 
 # An optional configuration for enabling request/response patterns (with the /request/ route)
-request_response = "Messagepack" | "Json"
+request_response = "Messagepack"
 
 # Possible Values: 
 
