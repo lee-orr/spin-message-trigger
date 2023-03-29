@@ -35,7 +35,7 @@ When setting up a spin application with this trigger, there are 3 parts:
 ### Trigger Definition
 The trigger definition object contains two fields - the type, which must be "message", and a dictionary of broker configs. Each broker config contains a broker type - a value which changes based on the message broker type - and a gateway definition.
 
-More info on the broker config is below.
+More info on the broker types & gateway definition is below.
 
 In the example, this section looks like this:
 
@@ -44,7 +44,7 @@ In the example, this section looks like this:
 [trigger]
 type = "message"
 
-# This sets up a broker called "test", with the "InMemoryBroker" type - which is a simple in memory broker, best used for single instance deployments or testing purposes
+# This sets up a broker called "test", with the "InMemoryBroker" type.
 [trigger.brokers.test]
 broker_type = "InMemoryBroker"
 
@@ -53,14 +53,82 @@ broker_type = "InMemoryBroker"
 port = 3_005
 request_response = "Json"
 
-# This sets up a broker called "secondary", which connects to a NATs server at the address "nats" (this is handled by docker compose treating that as a domain name)
+# This sets up a broker called "secondary", which connects to a NATs server at the address "nats" (this is handled by docker compose treating that as a domain name).
 [trigger.brokers.secondary.broker_type.Nats]
 addresses = ["nats"]
 
-# This sets up an HTTP gateway for the secondary broker on port 3006, and allowing websockets to subscribe to topics published on that broker
+# This sets up an HTTP gateway for the secondary broker on port 3006, and allowing websockets to subscribe to topics published on that broker.
 [trigger.brokers.secondary.gateway.Http]
 port = 3_006
 websockets = "TextBody"
+```
+
+### Broker Type Configuration
+#### In Memory Broker
+The in memory broker is a simple broker, primarily meant for use in single instance deployments and for testing purposes, with support for wildcard subscriptions.
+It's configuration is simple:
+```toml
+[trigger.brokers.BROKER_NAME]
+broker_type = "InMemoryBroker"
+```
+
+#### Redis Broker
+The Redis broker provides support for Redis channels, similar to the spin built-in redis trigger, but with additional support for wildcard subscriptions.
+It's configuration involves setting the redis address, like so
+```toml
+[trigger.brokers.BROKER_NAME.broker_type]
+broker_type = { Redis = "redis://redis:6379" }
+```
+
+#### NATs Broker
+The NATs broker provides support for subscribing to topics on a NATs broker.
+It's configuration is more complex than the previous ones:
+```toml
+[trigger.brokers.BROKER_NAME.broker_type.NATs]
+# This is required, and contains a list of addresses for the nats servers
+addresses = ["nats"]
+
+# Optional - do the servers require tls. defaults to false
+tls = true | false
+
+# Optional - the interval for pings, in milliseconds.
+pint_interval = 10_000
+
+# Optional - path to root certificates
+root_certificate = "/path/to/root/certificate"
+
+# Optional - paths to client certificate files
+client_certificate = { certificate = "/path/to/client/cert", key = "/path/to/client/key" }
+
+# Optional - client name
+client_name = "the client name"
+```
+
+In addition - there are multiple optional authentication options for NATs:
+```toml
+# Token based auth
+[trigger.brokers.BROKER_NAME.broker_type.NATs.auth]
+Token = "token string"
+
+# Username & Password authentication
+[trigger.brokers.BROKER_NAME.broker_type.NATs.auth]
+User = { user = "username", password = "password" }
+
+# NKey authentication
+[trigger.brokers.BROKER_NAME.broker_type.NATs.auth]
+NKey = "NKey String"
+
+# JWT auth
+[trigger.brokers.BROKER_NAME.broker_type.NATs.auth]
+Jwt = { nkey_seed = "nkey seed", jwt = "jwt string" }
+
+# Credentials File
+[trigger.brokers.BROKER_NAME.broker_type.NATs.auth]
+CredentialsFile = "/path/to/credentials/file"
+
+# Credentials String
+[trigger.brokers.BROKER_NAME.broker_type.NATs.auth]
+CredentialsString = "credentials string"
 ```
 
 ### Component Definitions
