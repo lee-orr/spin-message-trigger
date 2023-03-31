@@ -10,6 +10,8 @@ permissions:
 env:
   PROGRAM_NAME: trigger-message
   REPO: lee-orr/spin-message-trigger
+  PKG_CONFIG_SYSROOT_DIR: /
+  PKG_CONFIG_ALLOW_CROSS: 1
 
 jobs:
   build:
