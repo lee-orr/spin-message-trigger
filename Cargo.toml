@@ -6,6 +6,3 @@ members = [
     "example-app",
     "request-response-demo"
 ]
-
-[patch.crates-io]
-openssl-sys = {version = "*", features = ["vendored"]}
