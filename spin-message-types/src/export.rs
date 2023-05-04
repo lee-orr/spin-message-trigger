@@ -5,7 +5,7 @@ wasmtime::component::bindgen!({
     async: true
 });
 
-pub use spin_message_types::{InternalMessage, Outcome, InternalOutputMessage};
+pub use spin_message_types::{InternalMessage, InternalOutputMessage, Outcome};
 
 impl From<InternalOutputMessage> for OutputMessage {
     fn from(value: InternalOutputMessage) -> Self {

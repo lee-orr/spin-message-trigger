@@ -25,7 +25,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
             unsafe extern "C" fn __export_guest_handle_message(arg0: i32,arg1: i32,arg2: i32,arg3: i32,arg4: i32,arg5: i32,) -> i32 {
                 spin_message_types::import::guest::call_handle_message::<Messages>(arg0,arg1,arg2,arg3,arg4,arg5,)
             }
-            
+
             #[doc(hidden)]
             #[export_name = "cabi_post_guest#handle-message"]
             #[allow(non_snake_case)]

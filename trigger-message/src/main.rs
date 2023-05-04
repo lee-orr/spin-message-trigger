@@ -8,14 +8,14 @@ use anyhow::{bail, Error};
 use broker::MessageBroker;
 use clap::Parser;
 use gateway::spawn_gateway;
+use in_memory_broker::InMemoryBroker;
 use nats_broker::NatsConnectionInfo;
 use serde::{Deserialize, Serialize};
 use spin_app::MetadataKey;
+use spin_message_types::export::{InternalMessage, Outcome};
 use spin_trigger::EitherInstance;
 use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecutor};
 use std::{collections::HashMap, sync::Arc};
-use in_memory_broker::InMemoryBroker;
-use spin_message_types::export::{InternalMessage, Outcome};
 
 use spin_message_types::{InputMessage, OutputMessage};
 
@@ -117,9 +117,7 @@ impl TriggerExecutor for MessageTrigger {
 
     async fn new(engine: TriggerAppEngine<Self>) -> anyhow::Result<Self> {
         println!("Getting metadata - let's see what it is...");
-        let metadata = engine
-            .app()
-            .require_metadata(TRIGGER_METADATA_KEY)?;
+        let metadata = engine.app().require_metadata(TRIGGER_METADATA_KEY)?;
         println!("Getting Trigger Configs");
         let components = engine
             .trigger_configs()
@@ -264,7 +262,10 @@ impl MessageTrigger {
 
         println!("ready for wasm");
 
-        let result = instance.guest().call_handle_message(&mut store, message).await?;
+        let result = instance
+            .guest()
+            .call_handle_message(&mut store, message)
+            .await?;
 
         println!("Got result {result:?}");
 

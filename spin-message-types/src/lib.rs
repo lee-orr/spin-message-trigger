@@ -8,6 +8,7 @@ pub mod export;
 
 #[cfg(feature = "import")]
 #[allow(clippy::all)]
+#[allow(unused_macros)]
 pub mod import;
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]

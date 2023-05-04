@@ -1,5 +1,3 @@
-#[allow(unused_macros)]
-
 pub use message_macro::*;
 pub use wit_bindgen_rust::*;
 
@@ -13,7 +11,7 @@ impl From<crate::InputMessage> for spin_message_types::InternalMessage {
         Self {
             message: value.message,
             broker: value.broker,
-            subject: value.subject
+            subject: value.subject,
         }
     }
 }
@@ -23,7 +21,7 @@ impl From<spin_message_types::InternalMessage> for crate::InputMessage {
         Self {
             message: value.message,
             broker: value.broker,
-            subject: value.subject
+            subject: value.subject,
         }
     }
 }
@@ -48,11 +46,13 @@ impl From<spin_message_types::InternalOutputMessage> for crate::OutputMessage {
     }
 }
 
-impl From<Result<Vec<crate::OutputMessage>,crate::MessageError>> for spin_message_types::Outcome {
-    fn from(value: Result<Vec<crate::OutputMessage>,crate::MessageError>) -> Self {
+impl From<Result<Vec<crate::OutputMessage>, crate::MessageError>> for spin_message_types::Outcome {
+    fn from(value: Result<Vec<crate::OutputMessage>, crate::MessageError>) -> Self {
         match value {
-            Ok(vec) => spin_message_types::Outcome::Publish(vec.into_iter().map(|v| v.into()).collect()),
-            Err(err) => spin_message_types::Outcome::Error(err.to_string())
+            Ok(vec) => {
+                spin_message_types::Outcome::Publish(vec.into_iter().map(|v| v.into()).collect())
+            }
+            Err(err) => spin_message_types::Outcome::Error(err.to_string()),
         }
     }
 }
