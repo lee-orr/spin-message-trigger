@@ -10,11 +10,12 @@ use clap::Parser;
 use gateway::spawn_gateway;
 use nats_broker::NatsConnectionInfo;
 use serde::{Deserialize, Serialize};
+use spin_app::MetadataKey;
+use spin_trigger::EitherInstance;
 use spin_trigger::{cli::TriggerExecutorCommand, TriggerAppEngine, TriggerExecutor};
 use std::{collections::HashMap, sync::Arc};
-
 use in_memory_broker::InMemoryBroker;
-use spin_message_types::export::messages::{InternalMessage, Outcome};
+use spin_message_types::export::{InternalMessage, Outcome};
 
 use spin_message_types::{InputMessage, OutputMessage};
 
@@ -26,7 +27,7 @@ async fn main() -> Result<(), Error> {
 }
 
 type Command = TriggerExecutorCommand<MessageTrigger>;
-type RuntimeData = spin_message_types::export::messages::ExportedData;
+type RuntimeData = ();
 
 pub enum Broker {
     InMemoryBroker(InMemoryBroker),
@@ -87,6 +88,8 @@ struct MessageMetadata {
     brokers: HashMap<String, BrokerConfig>,
 }
 
+const TRIGGER_METADATA_KEY: MetadataKey<MessageMetadata> = MetadataKey::new("trigger");
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MessageResultType {
     default_broker: String,
@@ -112,11 +115,11 @@ impl TriggerExecutor for MessageTrigger {
 
     type RunConfig = spin_trigger::cli::NoArgs;
 
-    fn new(engine: TriggerAppEngine<Self>) -> anyhow::Result<Self> {
+    async fn new(engine: TriggerAppEngine<Self>) -> anyhow::Result<Self> {
         println!("Getting metadata - let's see what it is...");
         let metadata = engine
             .app()
-            .require_metadata::<MessageMetadata>("trigger")?;
+            .require_metadata(TRIGGER_METADATA_KEY)?;
         println!("Getting Trigger Configs");
         let components = engine
             .trigger_configs()
@@ -244,11 +247,11 @@ impl MessageTrigger {
         message: InputMessage,
     ) -> anyhow::Result<()> {
         let (instance, mut store) = self.engine.prepare_instance(&config.component).await?;
+        let EitherInstance::Component(instance) = instance else {
+            unreachable!()
+        };
         println!("Setup instance");
-        let engine =
-            spin_message_types::export::messages::Exported::new(&mut store, &instance, |data| {
-                data.as_mut()
-            })?;
+        let instance = spin_message_types::export::SpinMessageTrigger::new(&mut store, &instance)?;
         println!("engine ready");
 
         let original_subject = &message.subject;
@@ -261,7 +264,7 @@ impl MessageTrigger {
 
         println!("ready for wasm");
 
-        let result = engine.handle_message(&mut store, message).await?;
+        let result = instance.guest().call_handle_message(&mut store, message).await?;
 
         println!("Got result {result:?}");
 

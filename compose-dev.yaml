@@ -1,9 +1,7 @@
 version: '4'
 services:
   devcontainer:
-    build: 
-      target: development
-      dockerfile: Dockerfile
+    image: ubuntu:latest
     command: sleep infinity
     environment:
       HOST_NAME: ${HOST_NAME}

@@ -1,0 +1,27 @@
+default interface spin-message-types {
+    record internal-message {
+        message: list<u8>,
+        subject: string,
+        broker: string
+    }
+
+    record internal-output-message {
+        message: list<u8>,
+        subject: option<string>,
+        broker: option<string>
+    }
+
+    variant outcome {
+        publish(list<internal-output-message>),
+        error(string)
+    }
+}
+
+default world spin-message-trigger {
+    import spin-message-types: self.spin-message-types
+    
+    export guest: interface {
+        use self.spin-message-types.{internal-message, outcome}
+        handle-message: func(message: internal-message) -> outcome
+    }
+}

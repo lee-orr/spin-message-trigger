@@ -6,6 +6,17 @@
   "dockerComposeFile": "../compose-dev.yaml",
   "service": "devcontainer",
 	"workspaceFolder": "/workspace",
+	"features": {
+		"ghcr.io/devcontainers/features/rust:1": {},
+		"devwasm.azurecr.io/dev-wasm/dev-wasm-feature/rust-wasi:0": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/cargo-binstall:latest": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/cargo-watch:latest": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/cargo-expand:latest": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/bacon:latest": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/fermyon-spin:latest": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/mprocs:latest": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/wasm32-unknown-unknown:latest": {}
+	},
 	"customizations": {
 		"vscode": {
 			"extensions": [

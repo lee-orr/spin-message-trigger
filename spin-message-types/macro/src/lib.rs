@@ -3,68 +3,14 @@ use quote::quote;
 
 #[proc_macro_attribute]
 pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    const MESSAGE_COMPONENT_WIT: &str =
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../exported.wit"));
-
     let func = syn::parse_macro_input!(item as syn::ItemFn);
     let func_name = &func.sig.ident;
 
     quote!(
-        wit_bindgen_rust::export!({src["messages"]: #MESSAGE_COMPONENT_WIT});
-
         struct Messages;
 
-        impl From<spin_message_types::InputMessage> for messages::InternalMessage {
-            fn from(value: spin_message_types::InputMessage) -> Self {
-                Self {
-                    message: value.message,
-                    broker: value.broker,
-                    subject: value.subject
-                }
-            }
-        }
-
-        impl From<messages::InternalMessage> for spin_message_types::InputMessage {
-            fn from(value: messages::InternalMessage) -> Self {
-                Self {
-                    message: value.message,
-                    broker: value.broker,
-                    subject: value.subject
-                }
-            }
-        }
-
-        impl From<spin_message_types::OutputMessage> for messages::InternalOutputMessage {
-            fn from(value: spin_message_types::OutputMessage) -> Self {
-                Self {
-                    message: value.message.into(),
-                    subject: value.subject,
-                    broker: value.broker,
-                }
-            }
-        }
-
-        impl From<messages::InternalOutputMessage> for spin_message_types::OutputMessage {
-            fn from(value: messages::InternalOutputMessage) -> Self {
-                Self {
-                    message: value.message.into(),
-                    subject: value.subject,
-                    broker: value.broker,
-                }
-            }
-        }
-
-        impl From<Result<Vec<spin_message_types::OutputMessage>,spin_message_types::MessageError>> for messages::Outcome {
-            fn from(value: Result<Vec<spin_message_types::OutputMessage>,spin_message_types::MessageError>) -> Self {
-                match value {
-                    Ok(vec) => messages::Outcome::Publish(vec.into_iter().map(|v| v.into()).collect()),
-                    Err(err) => messages::Outcome::Error(err.to_string())
-                }
-            }
-        }
-
-        impl messages::Messages for Messages {
-            fn handle_message(message: messages::InternalMessage) -> messages::Outcome {
+        impl spin_message_types::import::guest::Guest for Messages {
+            fn handle_message(message: spin_message_types::import::spin_message_types::InternalMessage) -> spin_message_types::import::spin_message_types::Outcome {
                 let message : spin_message_types::InputMessage = message.into();
                 #func
 
@@ -72,6 +18,21 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
+        const _: () = {
+            #[doc(hidden)]
+            #[export_name = "guest#handle-message"]
+            #[allow(non_snake_case)]
+            unsafe extern "C" fn __export_guest_handle_message(arg0: i32,arg1: i32,arg2: i32,arg3: i32,arg4: i32,arg5: i32,) -> i32 {
+                spin_message_types::import::guest::call_handle_message::<Messages>(arg0,arg1,arg2,arg3,arg4,arg5,)
+            }
+            
+            #[doc(hidden)]
+            #[export_name = "cabi_post_guest#handle-message"]
+            #[allow(non_snake_case)]
+            unsafe extern "C" fn __post_return_guest_handle_message(arg0: i32,) {
+                spin_message_types::import::guest::post_return_handle_message::<Messages>(arg0,)
+            }
+        };
     )
     .into()
 }

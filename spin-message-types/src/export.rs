@@ -1,12 +1,11 @@
 use crate::{InputMessage, OutputMessage};
 
-use self::messages::{InternalMessage, InternalOutputMessage};
+wasmtime::component::bindgen!({
+    path: "wit/spin-message-trigger.wit",
+    async: true
+});
 
-wit_bindgen_wasmtime::import!({paths: ["exported.wit"], async: *});
-
-pub mod messages {
-    pub use crate::export::exported::*;
-}
+pub use spin_message_types::{InternalMessage, Outcome, InternalOutputMessage};
 
 impl From<InternalOutputMessage> for OutputMessage {
     fn from(value: InternalOutputMessage) -> Self {
