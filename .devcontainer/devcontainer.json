@@ -28,7 +28,8 @@
 				"jedisct1.witx",
 				"rangav.vscode-thunder-client",
 				"Odiriuss.rust-macro-expand",
-				"mohamed-nouri.websocket-client"
+				"mohamed-nouri.websocket-client",
+				"github.vscode-github-actions"
 			]
 		}
 	}

@@ -34,6 +34,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.config.target }}
+      - name: Install Targets
+        run: rustup target install wasm32-unknown-unknown && rustup target install wasm32-wasi
       - name: Install Spin
         uses: rajatjindal/setup-actions/spin@main
         with:
