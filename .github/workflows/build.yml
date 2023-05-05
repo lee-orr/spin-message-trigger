@@ -38,6 +38,18 @@ jobs:
           targets: ${{ matrix.config.target }}
       - name: Install Targets
         run: rustup target install wasm32-unknown-unknown && rustup target install wasm32-wasi
+      - name: Setup SSL dev for ARM
+        if: ${{matrix.config.target}} == "aarch64-unknown-linux-gnu"
+        run: |
+          wget https://www.openssl.org/source/openssl-1.1.1.tar.gz
+          tar -xvzf openssl-1.1.1.tar.gz
+          cd openssl-1.1.1/
+          ./Configure linux-aarch64 --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
+          make -j$(($(nproc)+1))
+          make install
+          echo 'LD_LIBRARY_PATH=/usr/local/ssl/lib:${LD_LIBRARY_PATH}' >> /etc/environment
+          rm openssl-1.1.1.tar.gz
+          rm openssl-1.1.1 -r
       - name: Install Spin
         uses: rajatjindal/setup-actions/spin@main
         with:
