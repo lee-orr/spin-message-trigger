@@ -28,6 +28,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
+      - name: Install Targets
+        run: rustup target install wasm32-unknown-unknown && rustup target install wasm32-wasi
       - uses: fxwiegand/apply-clippy-lints@v1.0.4
       
   fmt:
