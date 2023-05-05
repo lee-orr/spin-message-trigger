@@ -39,7 +39,7 @@ jobs:
       - name: Install Targets
         run: rustup target install wasm32-unknown-unknown && rustup target install wasm32-wasi
       - name: Setup SSL dev for ARM
-        if: ${{matrix.config.target}} == "aarch64-unknown-linux-gnu"
+        if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
           # openssl
           wget https://www.openssl.org/source/openssl-1.1.1e.tar.gz
