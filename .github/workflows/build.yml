@@ -41,9 +41,9 @@ jobs:
       - name: Setup SSL dev for ARM
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
-          sudo dpkg --add-architecture aarch64
+          sudo dpkg --add-architecture arm64
           sudo apt update
-          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libssl-dev:aarch64
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libssl-dev:arm64
           echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
       - name: Install Spin
