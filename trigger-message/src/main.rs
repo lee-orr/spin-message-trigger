@@ -1,15 +1,15 @@
 mod broker;
+mod configs;
 mod gateway;
 mod in_memory_broker;
 mod nats_broker;
 mod redis_broker;
-mod configs;
 
 use anyhow::{bail, Error};
 use broker::MessageBroker;
 use clap::Parser;
 use gateway::spawn_gateway;
-use nats_broker::NatsConnectionInfo;
+
 use serde::{Deserialize, Serialize};
 use spin_app::MetadataKey;
 use spin_message_types::export::{InternalMessage, Outcome};
@@ -29,7 +29,6 @@ async fn main() -> Result<(), Error> {
 type Command = TriggerExecutorCommand<MessageTrigger>;
 type RuntimeData = ();
 
-
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct MessageMetadata {
@@ -42,7 +41,6 @@ struct MessageTrigger {
     brokers: HashMap<String, Arc<dyn MessageBroker>>,
     components: Vec<configs::MessageTriggerConfig>,
 }
-
 
 const TRIGGER_METADATA_KEY: MetadataKey<MessageMetadata> = MetadataKey::new("trigger");
 

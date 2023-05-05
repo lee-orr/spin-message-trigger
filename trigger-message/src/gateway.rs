@@ -14,7 +14,10 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use spin_message_types::{HttpRequest, HttpResponse, OutputMessage};
 
-use crate::{broker::MessageBroker, configs::{GatewayRequestResponseConfig, self}, configs::WebsocketConfig};
+use crate::{
+    broker::MessageBroker,
+    configs::{self, GatewayRequestResponseConfig},
+};
 
 #[derive(Clone)]
 struct GatewayState {
