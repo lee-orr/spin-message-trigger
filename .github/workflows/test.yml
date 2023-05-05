@@ -40,22 +40,7 @@ jobs:
       - test
       - clippy
       - fmt
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - { target: "x86_64-unknown-linux-gnu", os: "ubuntu-latest", arch: "amd64", extension: "" }
-          - { target: "x86_64-apple-darwin", os: "macos-latest", arch: "amd64", extension: "" }
-          - { target: "aarch64-apple-darwin", os: "macos-latest", arch: "aarch64", extension: "" }
-          - { target: "x86_64-pc-windows-msvc", os: "windows-latest", arch: "amd64", extension: ".exe" }
-
-    steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
-
-    - name: Build
-      run: cargo build --verbose --bin trigger-message --release
+    uses: ./.github/workflows/build.yml
 
 
 
