@@ -41,8 +41,8 @@ jobs:
       - name: Setup SSL dev for ARM
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'
         run: |
-          sudo apt update
-          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          apt update
+          apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
 
