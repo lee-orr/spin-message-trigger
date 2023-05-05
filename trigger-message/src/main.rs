@@ -3,12 +3,12 @@ mod gateway;
 mod in_memory_broker;
 mod nats_broker;
 mod redis_broker;
+mod configs;
 
 use anyhow::{bail, Error};
 use broker::MessageBroker;
 use clap::Parser;
 use gateway::spawn_gateway;
-use in_memory_broker::InMemoryBroker;
 use nats_broker::NatsConnectionInfo;
 use serde::{Deserialize, Serialize};
 use spin_app::MetadataKey;
@@ -29,81 +29,22 @@ async fn main() -> Result<(), Error> {
 type Command = TriggerExecutorCommand<MessageTrigger>;
 type RuntimeData = ();
 
-pub enum Broker {
-    InMemoryBroker(InMemoryBroker),
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct BrokerConfig {
-    pub broker_type: BrokerTypeConfig,
-    pub gateway: GatewayConfig,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub enum BrokerTypeConfig {
-    #[default]
-    InMemoryBroker,
-    Redis(String),
-    Nats(NatsConnectionInfo),
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub enum WebsocketConfig {
-    #[default]
-    BinaryBody,
-    TextBody,
-    Messagepack,
-    Json,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub enum GatewayRequestResponseConfig {
-    #[default]
-    Messagepack,
-    Json,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub enum GatewayConfig {
-    #[default]
-    None,
-    Http {
-        port: u16,
-        websockets: Option<WebsocketConfig>,
-        request_response: Option<GatewayRequestResponseConfig>,
-        timeout: Option<u64>,
-    },
-}
-
-struct MessageTrigger {
-    engine: TriggerAppEngine<Self>,
-    brokers: HashMap<String, Arc<dyn MessageBroker>>,
-    components: Vec<MessageTriggerConfig>,
-}
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct MessageMetadata {
     r#type: String,
-    brokers: HashMap<String, BrokerConfig>,
+    brokers: HashMap<String, configs::BrokerConfig>,
 }
+
+struct MessageTrigger {
+    engine: TriggerAppEngine<Self>,
+    brokers: HashMap<String, Arc<dyn MessageBroker>>,
+    components: Vec<configs::MessageTriggerConfig>,
+}
+
 
 const TRIGGER_METADATA_KEY: MetadataKey<MessageMetadata> = MetadataKey::new("trigger");
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct MessageResultType {
-    default_broker: String,
-    default_subject: String,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct MessageTriggerConfig {
-    component: String,
-    broker: String,
-    subscription: String,
-    result: Option<MessageResultType>,
-}
 
 #[async_trait::async_trait]
 impl TriggerExecutor for MessageTrigger {
@@ -111,7 +52,7 @@ impl TriggerExecutor for MessageTrigger {
 
     type RuntimeData = RuntimeData;
 
-    type TriggerConfig = MessageTriggerConfig;
+    type TriggerConfig = configs::MessageTriggerConfig;
 
     type RunConfig = spin_trigger::cli::NoArgs;
 
@@ -130,7 +71,7 @@ impl TriggerExecutor for MessageTrigger {
             .map(
                 |(
                     key,
-                    BrokerConfig {
+                    configs::BrokerConfig {
                         broker_type,
                         gateway,
                     },
@@ -140,17 +81,17 @@ impl TriggerExecutor for MessageTrigger {
                     );
                     let key = key.clone();
                     let broker: Arc<dyn MessageBroker> = match broker_type {
-                        BrokerTypeConfig::InMemoryBroker => {
+                        configs::BrokerTypeConfig::InMemoryBroker => {
                             Arc::new(in_memory_broker::InMemoryBroker::new(key.clone()))
                         }
-                        BrokerTypeConfig::Redis(address) => {
+                        configs::BrokerTypeConfig::Redis(address) => {
                             Arc::new(redis_broker::RedisBroker::new(address.clone(), key.clone()))
                         }
-                        BrokerTypeConfig::Nats(options) => {
+                        configs::BrokerTypeConfig::Nats(options) => {
                             Arc::new(nats_broker::NatsBroker::new(options.clone(), key.clone()))
                         }
                     };
-                    if let GatewayConfig::Http {
+                    if let configs::GatewayConfig::Http {
                         port,
                         websockets,
                         request_response,
@@ -241,7 +182,7 @@ impl MessageTrigger {
 
     async fn handle_message(
         &self,
-        config: &MessageTriggerConfig,
+        config: &configs::MessageTriggerConfig,
         message: InputMessage,
     ) -> anyhow::Result<()> {
         let (instance, mut store) = self.engine.prepare_instance(&config.component).await?;
@@ -272,7 +213,7 @@ impl MessageTrigger {
         match (result, &config.result) {
             (
                 Outcome::Publish(msgs),
-                Some(MessageResultType {
+                Some(configs::MessageResultType {
                     default_broker,
                     default_subject,
                 }),

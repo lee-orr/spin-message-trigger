@@ -14,19 +14,19 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use spin_message_types::{HttpRequest, HttpResponse, OutputMessage};
 
-use crate::{broker::MessageBroker, GatewayRequestResponseConfig, WebsocketConfig};
+use crate::{broker::MessageBroker, configs::{GatewayRequestResponseConfig, self}, configs::WebsocketConfig};
 
 #[derive(Clone)]
 struct GatewayState {
     broker: Arc<dyn MessageBroker>,
-    websockets: Option<WebsocketConfig>,
-    request_response: Option<GatewayRequestResponseConfig>,
+    websockets: Option<configs::WebsocketConfig>,
+    request_response: Option<configs::GatewayRequestResponseConfig>,
     timeout: Option<u64>,
 }
 
 pub async fn spawn_gateway(
     port: u16,
-    websockets: Option<WebsocketConfig>,
+    websockets: Option<configs::WebsocketConfig>,
     broker: Arc<dyn MessageBroker>,
     request_response: Option<GatewayRequestResponseConfig>,
     timeout: Option<u64>,
@@ -91,7 +91,7 @@ async fn handle_websocket(
     mut socket: WebSocket,
     subject: String,
     broker: Arc<dyn MessageBroker>,
-    websockets: WebsocketConfig,
+    websockets: configs::WebsocketConfig,
 ) {
     println!("upgraded");
     if let Ok(mut result) = broker.subscribe(&subject).await {
@@ -99,24 +99,24 @@ async fn handle_websocket(
         while let Ok(message) = result.recv().await {
             println!("socket subscription message recieved");
             match websockets {
-                WebsocketConfig::BinaryBody => {
+                configs::WebsocketConfig::BinaryBody => {
                     let _ = socket.send(WsMessage::Binary(message.message)).await;
                     println!("socket subscription message sent");
                 }
-                WebsocketConfig::TextBody => {
+                configs::WebsocketConfig::TextBody => {
                     if let Ok(body) = std::str::from_utf8(&message.message) {
                         let _ = socket.send(WsMessage::Text(body.to_string())).await;
                         println!("socket subscription message sent");
                     }
                 }
-                WebsocketConfig::Messagepack => {
+                configs::WebsocketConfig::Messagepack => {
                     let mut buf = Vec::new();
                     if let Ok(()) = message.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
                         let _ = socket.send(WsMessage::Binary(buf)).await;
                         println!("socket subscription messagepack sent");
                     }
                 }
-                WebsocketConfig::Json => {
+                configs::WebsocketConfig::Json => {
                     if let Ok(json) = serde_json::to_string(&message) {
                         let _ = socket.send(WsMessage::Text(json)).await;
                         println!("socket subscription message json sent");
@@ -153,7 +153,7 @@ async fn request_handler(
         };
 
         let body = match serializer {
-            GatewayRequestResponseConfig::Messagepack => {
+            configs::GatewayRequestResponseConfig::Messagepack => {
                 let mut buf = Vec::new();
                 if let Ok(()) = request.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
                     Some(buf)
@@ -161,7 +161,7 @@ async fn request_handler(
                     None
                 }
             }
-            GatewayRequestResponseConfig::Json => {
+            configs::GatewayRequestResponseConfig::Json => {
                 serde_json::to_string(&request).ok().map(|v| v.into_bytes())
             }
         };
@@ -179,10 +179,10 @@ async fn request_handler(
                     if let Ok(Ok(result)) = tokio::time::timeout(timeout, subscribe.recv()).await {
                         println!("Got Response: {result:?}");
                         let result = match serializer {
-                            GatewayRequestResponseConfig::Messagepack => {
+                            configs::GatewayRequestResponseConfig::Messagepack => {
                                 rmp_serde::from_slice::<HttpResponse>(&result.message).ok()
                             }
-                            GatewayRequestResponseConfig::Json => {
+                            configs::GatewayRequestResponseConfig::Json => {
                                 serde_json::from_slice::<HttpResponse>(&result.message).ok()
                             }
                         };
