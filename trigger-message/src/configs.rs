@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 use crate::nats_broker::NatsConnectionInfo;
@@ -16,6 +18,15 @@ pub enum BrokerTypeConfig {
     Nats(NatsConnectionInfo),
 }
 
+impl FromStr for BrokerTypeConfig {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let result = serde_qs::from_str(&s)?;
+        Ok(result)
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub enum WebsocketConfig {
     #[default]
@@ -25,11 +36,39 @@ pub enum WebsocketConfig {
     Json,
 }
 
+impl FromStr for WebsocketConfig {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "messagepack" =>
+            Ok(WebsocketConfig::Messagepack),
+            "json" => Ok(WebsocketConfig::Json),
+            "binary" => Ok(WebsocketConfig::BinaryBody),
+            "text" => Ok(WebsocketConfig::TextBody),
+            _ => Err(anyhow::Error::msg("Invalid Websocket Protocol"))
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub enum GatewayRequestResponseConfig {
     #[default]
     Messagepack,
     Json,
+}
+
+impl FromStr for GatewayRequestResponseConfig {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "messagepack" =>
+            Ok(GatewayRequestResponseConfig::Messagepack),
+            "json" => Ok(GatewayRequestResponseConfig::Json),
+            _ => Err(anyhow::Error::msg("Invalid Gateway Request Response Protocol"))
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]

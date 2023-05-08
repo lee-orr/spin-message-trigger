@@ -165,6 +165,7 @@ impl NatsBroker {
                 if let Ok(mut pubsub) = client.subscribe(subject.clone()).await {
                     println!("Subscribed to async_nats: {subject}");
                     while let Some(msg) = pubsub.next().await {
+                        let subject = msg.subject.clone();
                         println!("Received NATS Message on {subject}");
                         let body = msg.payload.to_vec();
                         let _ = sender.send(InputMessage {

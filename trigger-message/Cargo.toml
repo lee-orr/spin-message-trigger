@@ -3,6 +3,10 @@ name = "trigger-message"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "gateway"
+path = "bin/gateway.rs"
+
 
 [dependencies]
 anyhow = "1.0.68"
@@ -25,3 +29,4 @@ redis = { version = "0.23", features = [ "tokio-comp" ] }
 async-nats = "0.29"
 nkeys = "0.2"
 ulid = "1"
+serde_qs = "*"
