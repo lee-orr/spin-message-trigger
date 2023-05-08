@@ -21,6 +21,7 @@ addresses = ["nats"]
 [trigger.brokers.secondary.gateway.Http]
 port = 3_006
 websockets = "TextBody"
+request_response = "Json"
 
 
 [[component]]

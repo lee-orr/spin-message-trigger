@@ -42,6 +42,7 @@ pub struct HttpRequest {
     pub headers: HeaderMap,
     #[serde(with = "http_serde::uri")]
     pub uri: Uri,
+    pub path: String,
     pub body: Vec<u8>,
 }
 

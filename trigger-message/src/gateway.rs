@@ -12,7 +12,7 @@ use axum::{
 use serde::Serialize;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use spin_message_types::{HttpRequest, HttpResponse, OutputMessage};
+use spin_message_types::{HttpRequest, OutputMessage};
 
 use crate::{
     broker::MessageBroker,
@@ -140,69 +140,23 @@ async fn request_handler(
 ) -> Response<BoxBody> {
     if let Some(serializer) = &state.request_response {
         let broker = &state.broker;
-        let request_id = ulid::Ulid::new();
         let timeout = state.timeout.unwrap_or(2000);
         let timeout = Duration::from_millis(timeout);
-
-        let subject_base = format!("{request_id}.{method}.{path}");
-        let subject = format!("request.{subject_base}");
-        let response_subject = format!("response.{subject_base}");
 
         let request = HttpRequest {
             method: method.clone(),
             headers: headers.clone(),
             uri: uri.clone(),
+            path: path.clone(),
             body: bytes.to_vec(),
         };
-
-        let body = match serializer {
-            configs::GatewayRequestResponseConfig::Messagepack => {
-                let mut buf = Vec::new();
-                if let Ok(()) = request.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
-                    Some(buf)
-                } else {
-                    None
-                }
+        match tokio::time::timeout(timeout, broker.request(request, serializer)).await {
+            Ok(Ok(result)) => {
+                println!("Got Parsed Response: {result:?}");
+                (result.status, result.headers, result.body).into_response()
             }
-            configs::GatewayRequestResponseConfig::Json => {
-                serde_json::to_string(&request).ok().map(|v| v.into_bytes())
-            }
-        };
-
-        if let (Some(body), Ok(mut subscribe)) = (body, broker.subscribe(&response_subject).await) {
-            match broker
-                .publish(OutputMessage {
-                    subject: Some(subject),
-                    message: body,
-                    broker: None,
-                })
-                .await
-            {
-                Ok(_) => {
-                    if let Ok(Ok(result)) = tokio::time::timeout(timeout, subscribe.recv()).await {
-                        println!("Got Response: {result:?}");
-                        let result = match serializer {
-                            configs::GatewayRequestResponseConfig::Messagepack => {
-                                rmp_serde::from_slice::<HttpResponse>(&result.message).ok()
-                            }
-                            configs::GatewayRequestResponseConfig::Json => {
-                                serde_json::from_slice::<HttpResponse>(&result.message).ok()
-                            }
-                        };
-                        if let Some(result) = result {
-                            (result.status, result.headers, result.body).into_response()
-                        } else {
-                            (StatusCode::INTERNAL_SERVER_ERROR, "couldn't process result")
-                                .into_response()
-                        }
-                    } else {
-                        (StatusCode::GATEWAY_TIMEOUT, "response timed out").into_response()
-                    }
-                }
-                Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "couldn't publish").into_response(),
-            }
-        } else {
-            (StatusCode::INTERNAL_SERVER_ERROR, "couldn't subscribe").into_response()
+            Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            _ => (StatusCode::GATEWAY_TIMEOUT, "response timed out").into_response(),
         }
     } else {
         (StatusCode::BAD_REQUEST, "request-response is not supported").into_response()
