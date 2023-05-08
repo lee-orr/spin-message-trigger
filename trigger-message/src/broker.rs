@@ -1,9 +1,9 @@
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 use serde::Serialize;
 use tokio::sync::broadcast;
 
-use spin_message_types::{InputMessage, OutputMessage, HttpRequest, HttpResponse};
+use spin_message_types::{HttpRequest, HttpResponse, InputMessage, OutputMessage};
 
 use crate::configs::GatewayRequestResponseConfig;
 
@@ -28,8 +28,11 @@ pub trait MessageBroker: Send + Sync {
         Ok(())
     }
 
-    async fn request(&self, request: HttpRequest, serializer: &GatewayRequestResponseConfig) -> Result<HttpResponse> {
-
+    async fn request(
+        &self,
+        request: HttpRequest,
+        serializer: &GatewayRequestResponseConfig,
+    ) -> Result<HttpResponse> {
         let request_id = ulid::Ulid::new();
         let path = &request.path;
         let method = &request.method;
@@ -55,19 +58,17 @@ pub trait MessageBroker: Send + Sync {
             bail!("Couldn't Subscribe");
         };
 
-        self
-            .publish(OutputMessage {
-                subject: Some(subject),
-                message: body,
-                broker: None,
-            })
-            .await?;
+        self.publish(OutputMessage {
+            subject: Some(subject),
+            message: body,
+            broker: None,
+        })
+        .await?;
 
         let Ok(result) = subscribe.recv().await else {
             bail!("couldn't get result");
         };
 
-        
         println!("Got Response: {result:?}");
 
         let result = match serializer {

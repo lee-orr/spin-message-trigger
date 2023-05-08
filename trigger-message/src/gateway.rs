@@ -12,7 +12,7 @@ use axum::{
 use serde::Serialize;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use spin_message_types::{HttpRequest, HttpResponse, OutputMessage};
+use spin_message_types::{HttpRequest, OutputMessage};
 
 use crate::{
     broker::MessageBroker,
@@ -149,7 +149,6 @@ async fn request_handler(
             uri: uri.clone(),
             path: path.clone(),
             body: bytes.to_vec(),
-
         };
         match tokio::time::timeout(timeout, broker.request(request, serializer)).await {
             Ok(Ok(result)) => {
