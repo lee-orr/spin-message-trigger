@@ -14,6 +14,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 - a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker)
 - Trigger a Spin component from a message on a subscribed channel
 - Publish messages from the Spin component - defaulting to the same broker & subject, but optionally setting other defaults or manually setting the broker & subject for each message
+- Run the HTTP gateway server independently of the main spin app (doesn't really work for the in memory broker, but works for others)
 
 ### Desired Features
 - Support for some request-response paradigms
@@ -185,8 +186,13 @@ result = { default_broker = "secondary", default_subject = "good.bye" }
 command = "cargo build --target wasm32-wasi --release -p example-app"
 ```
 
+## Run the Gateway Independently
+You can build the gateway independantly using `cargo build -b gateway` and run it uusing `cargo run -b gateway`. However, it cannot parse the gateway definitions from the spin toml, since it's built primarily for situations where you might host the gateway separately from the actual spin app.
+
+As such - you configure it via the cli arguments. To get the up-to-date arguments, run `cargo run --bin gateway -- -h`. It's important to note that the broker is parsed as a query string. As such - a redis broker might be: `cargo run --bin gateway -- --broker Redis=redis://redis:6379` while a nats broker might be: `cargo run --bin gateway -- --broker Nats[addresses][0]="nats"`. It defaults to port `3015`.
+
 ## Development
-This repository is set up to function as either a Dev Container (using VsCode) or a Docker Dev Environment. This means you can use Github workspaces to get it set up automatically, or use VSCodes "Clone Repository into Volume" option to clone the repo & build the dev environment for you.
+This repository is set up to function as either a Dev Container (using VsCode). This means you can use Github workspaces to get it set up automatically, or use VSCodes "Clone Repository into Volume" option to clone the repo & build the dev environment for you.
 
 Once you are running, you can use the "update-plugin.sh" script to build the plugin and install it on spin.
 Then - run "spin build" & "spin up" in the workspace root to launch it
