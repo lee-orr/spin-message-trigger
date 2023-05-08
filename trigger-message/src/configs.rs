@@ -22,7 +22,7 @@ impl FromStr for BrokerTypeConfig {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let result = serde_qs::from_str(&s)?;
+        let result = serde_qs::from_str(s)?;
         Ok(result)
     }
 }
@@ -41,12 +41,11 @@ impl FromStr for WebsocketConfig {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "messagepack" =>
-            Ok(WebsocketConfig::Messagepack),
+            "messagepack" => Ok(WebsocketConfig::Messagepack),
             "json" => Ok(WebsocketConfig::Json),
             "binary" => Ok(WebsocketConfig::BinaryBody),
             "text" => Ok(WebsocketConfig::TextBody),
-            _ => Err(anyhow::Error::msg("Invalid Websocket Protocol"))
+            _ => Err(anyhow::Error::msg("Invalid Websocket Protocol")),
         }
     }
 }
@@ -63,10 +62,11 @@ impl FromStr for GatewayRequestResponseConfig {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "messagepack" =>
-            Ok(GatewayRequestResponseConfig::Messagepack),
+            "messagepack" => Ok(GatewayRequestResponseConfig::Messagepack),
             "json" => Ok(GatewayRequestResponseConfig::Json),
-            _ => Err(anyhow::Error::msg("Invalid Gateway Request Response Protocol"))
+            _ => Err(anyhow::Error::msg(
+                "Invalid Gateway Request Response Protocol",
+            )),
         }
     }
 }

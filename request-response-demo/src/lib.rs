@@ -1,7 +1,7 @@
 use http::StatusCode;
 use spin_message_types::import::json_http_component;
 use spin_message_types::*;
-use std::{str, default};
+use std::str;
 
 #[json_http_component]
 fn handle_message(message: HttpRequest) -> HttpResponse {
