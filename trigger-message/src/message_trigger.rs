@@ -115,7 +115,15 @@ impl TriggerExecutor for MessageTrigger {
                 scope.spawn(async {
                     let config = config.clone();
                     let rx = if let Some(broker) = self.brokers.get(&config.broker) {
-                        broker.subscribe(&config.subscription).await.ok()
+                        let subscription = match &config.subscription {
+                            SubscriptionType::Subscription { topic, result: _ } => topic.clone(),
+                            SubscriptionType::Request { path, method } => {
+                                let method = method.clone().unwrap_or("*".to_string());
+                                format!("request.*.{method}.{path}")
+                            }
+                            _ => "".to_string(),
+                        };
+                        broker.subscribe(&subscription).await.ok()
                     } else {
                         None
                     };
@@ -195,7 +203,12 @@ impl MessageTrigger {
 
         println!("Got result {result:?}");
 
-        match (result, &config.result) {
+        let default_result_target = match &config.subscription {
+            SubscriptionType::Subscription { topic: _, result } => result.as_ref(),
+            _ => None,
+        };
+
+        match (result, default_result_target) {
             (
                 Outcome::Publish(msgs),
                 Some(MessageResultType {

@@ -85,11 +85,25 @@ pub enum GatewayConfig {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub enum SubscriptionType {
+    #[default]
+    None,
+    Subscription {
+        topic: String,
+        result: Option<MessageResultType>,
+    },
+    Request {
+        path: String,
+        method: Option<String>,
+    },
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct MessageTriggerConfig {
     pub(crate) component: String,
     pub(crate) broker: String,
-    pub(crate) subscription: String,
-    pub(crate) result: Option<MessageResultType>,
+    pub(crate) subscription: SubscriptionType,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
