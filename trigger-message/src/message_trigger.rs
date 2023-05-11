@@ -116,9 +116,10 @@ impl TriggerExecutor for MessageTrigger {
                     let config = config.clone();
                     let rx = if let Some(broker) = self.brokers.get(&config.broker) {
                         let subscription = match &config.subscription {
-                            SubscriptionType::Subscription { topic, result: _ } => topic.clone(),
+                            SubscriptionType::Topic { topic, result: _ } => topic.clone(),
                             SubscriptionType::Request { path, method } => {
                                 let method = method.clone().unwrap_or("*".to_string());
+                                let path = path.replace(".", "_DOT_").replace("/", ".");
                                 format!("request.*.{method}.{path}")
                             }
                             _ => "".to_string(),
@@ -204,7 +205,7 @@ impl MessageTrigger {
         println!("Got result {result:?}");
 
         let default_result_target = match &config.subscription {
-            SubscriptionType::Subscription { topic: _, result } => result.as_ref(),
+            SubscriptionType::Topic { topic: _, result } => result.as_ref(),
             _ => None,
         };
 

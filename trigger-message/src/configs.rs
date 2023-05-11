@@ -88,7 +88,7 @@ pub enum GatewayConfig {
 pub enum SubscriptionType {
     #[default]
     None,
-    Subscription {
+    Topic {
         topic: String,
         result: Option<MessageResultType>,
     },

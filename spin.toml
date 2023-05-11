@@ -30,7 +30,7 @@ source = "./target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "test"
-[component.trigger.subscription.Subscription]
+[component.trigger.subscription.Topic]
 topic = "hello.*"
 result = { default_broker = "secondary", default_subject = "good.bye" }
 [component.build]
@@ -42,7 +42,7 @@ source = "./target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
 broker = "secondary"
-[component.trigger.subscription.Subscription]
+[component.trigger.subscription.Topic]
 topic = "good.bye"
 result = { default_broker = "test", default_subject = "sink" }
 [component.build]
@@ -55,6 +55,7 @@ allowed_http_hosts = []
 [component.trigger]
 broker = "secondary"
 [component.trigger.subscription.Request]
-path = "*"
+path = "test/*/hello"
+method = "POST"
 [component.build]
 command = "cargo build --target wasm32-wasi --release -p request-response-demo"

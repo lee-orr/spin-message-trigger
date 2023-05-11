@@ -34,7 +34,7 @@ pub trait MessageBroker: Send + Sync {
         serializer: &GatewayRequestResponseConfig,
     ) -> Result<HttpResponse> {
         let request_id = ulid::Ulid::new();
-        let path = &request.path;
+        let path = &request.path.replace(".", "_DOT_").replace("/", ".");
         let method = &request.method;
         let subject_base = format!("{request_id}.{method}.{path}");
         let subject = format!("request.{subject_base}");
