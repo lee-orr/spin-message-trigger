@@ -17,8 +17,8 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 - Run the HTTP gateway server independently of the main spin app (doesn't really work for the in memory broker, but works for others)
 
 ### Desired Features
-- Support for some request-response paradigms
-- Additional broker support (possibly utilizing TriggerMesh)
+- Additional broker support
+- support for queues
 - Support for basic event-sourcing structures
 
 ## Installation
