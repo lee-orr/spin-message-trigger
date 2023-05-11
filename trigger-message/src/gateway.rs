@@ -64,7 +64,7 @@ async fn publish(
             subject: Some(subject),
             message: body.to_vec(),
             broker: None,
-            response_subject: None
+            response_subject: None,
         })
         .await
     {
@@ -149,7 +149,7 @@ async fn request_handler(
             headers: headers.clone(),
             uri: uri.clone(),
             path: path.clone(),
-            body: bytes.to_vec()
+            body: bytes.to_vec(),
         };
         match tokio::time::timeout(timeout, broker.http_request(request, serializer)).await {
             Ok(Ok(result)) => {

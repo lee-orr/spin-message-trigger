@@ -24,7 +24,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     for mut msg in v.iter_mut() {
                         if msg.subject.is_none() {
                             if let Some(response) = &response_subject {
-                                msg.subject.insert(response.clone());
+                                let _ = msg.subject.insert(response.clone());
                             }
                         }
                     }

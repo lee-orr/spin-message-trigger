@@ -16,7 +16,7 @@ pub fn create_channel(capacity: usize) -> Sender {
 }
 
 pub fn default_message_response_subject(subject: &str) -> Option<String> {
-    if (subject.starts_with("request")) {
+    if subject.starts_with("request") {
         Some(subject.replace("request", "response"))
     } else {
         None
@@ -36,7 +36,11 @@ pub trait MessageBroker: Send + Sync {
         Ok(())
     }
 
-    fn generate_http_request_subjects(&self, path: &str, method: &http::Method) -> (String, String) {
+    fn generate_http_request_subjects(
+        &self,
+        path: &str,
+        method: &http::Method,
+    ) -> (String, String) {
         let request_id = ulid::Ulid::new();
         let path = path.replace('.', "_DOT_").replace('/', ".");
         let subject_base = format!("{request_id}.{method}.{path}");
@@ -60,7 +64,7 @@ pub trait MessageBroker: Send + Sync {
         } else {
             let resp = ulid::Ulid::new().to_string();
             let req = format!("request.{resp}.{subject}");
-            let resp = format!("response.{resp}.{subject}");            
+            let resp = format!("response.{resp}.{subject}");
             request.subject = Some(req);
             request.response_subject = Some(resp.clone());
 
@@ -71,8 +75,7 @@ pub trait MessageBroker: Send + Sync {
             bail!("Couldn't Subscribe");
         };
 
-        self.publish(request)
-        .await?;
+        self.publish(request).await?;
 
         let Ok(result) = subscribe.recv().await else {
             bail!("couldn't get result");
@@ -107,13 +110,14 @@ pub trait MessageBroker: Send + Sync {
             bail!("Couldn't Serialize body");
         };
 
-        let result = self.request(OutputMessage {
-            subject: Some(subject.clone()),
-            message: body,
-            broker: None,
-            response_subject: Some(response_subject.clone())
-        })
-        .await?;
+        let result = self
+            .request(OutputMessage {
+                subject: Some(subject.clone()),
+                message: body,
+                broker: None,
+                response_subject: Some(response_subject.clone()),
+            })
+            .await?;
 
         println!("Got Response: {result:?}");
 

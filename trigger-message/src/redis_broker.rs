@@ -7,7 +7,9 @@ use futures::StreamExt;
 use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::mpsc;
 
-use crate::broker::{create_channel, MessageBroker, Receiver, Sender, default_message_response_subject};
+use crate::broker::{
+    create_channel, default_message_response_subject, MessageBroker, Receiver, Sender,
+};
 use redis::*;
 
 #[derive(Clone, Debug)]

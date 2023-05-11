@@ -16,7 +16,7 @@ pub struct InputMessage {
     pub message: Vec<u8>,
     pub subject: String,
     pub broker: String,
-    pub response_subject: Option<String>
+    pub response_subject: Option<String>,
 }
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
@@ -24,7 +24,7 @@ pub struct OutputMessage {
     pub message: Vec<u8>,
     pub subject: Option<String>,
     pub broker: Option<String>,
-    pub response_subject: Option<String>
+    pub response_subject: Option<String>,
 }
 
 #[derive(Debug, Clone)]
