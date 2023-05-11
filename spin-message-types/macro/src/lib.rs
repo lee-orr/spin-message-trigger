@@ -15,7 +15,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 #func
 
                 let response_subject = message.response_subject.clone();
-                
+
                 let Ok(runtime) = spin_message_types::runtime::runtime() else {
                     return Result::<Vec<OutputMessage>, MessageError>::Err(MessageError("Couldn't generate runtime".to_string())).into();
                 };
