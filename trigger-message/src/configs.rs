@@ -96,6 +96,11 @@ pub enum SubscriptionType {
         path: String,
         method: Option<String>,
     },
+    Queue {
+        topic: String,
+        group: String,
+        result: Option<MessageResultType>,
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]

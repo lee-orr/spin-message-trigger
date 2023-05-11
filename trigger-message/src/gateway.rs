@@ -98,7 +98,7 @@ async fn handle_websocket(
     websockets: configs::WebsocketConfig,
 ) {
     println!("upgraded");
-    if let Ok(mut result) = broker.subscribe(&subject).await {
+    if let Ok(mut result) = broker.subscribe_to_topic(&subject).await {
         println!("subscribed to {subject}");
         while let Ok(message) = result.recv().await {
             println!("socket subscription message recieved");

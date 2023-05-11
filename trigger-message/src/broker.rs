@@ -5,7 +5,7 @@ use tokio::sync::broadcast;
 
 use spin_message_types::{HttpRequest, HttpResponse, InputMessage, OutputMessage};
 
-use crate::configs::GatewayRequestResponseConfig;
+use crate::configs::{GatewayRequestResponseConfig, SubscriptionType};
 
 pub type Receiver = broadcast::Receiver<InputMessage>;
 pub type Sender = broadcast::Sender<InputMessage>;
@@ -27,13 +27,34 @@ pub fn default_message_response_subject(subject: &str) -> Option<String> {
 pub trait MessageBroker: Send + Sync {
     fn name(&self) -> &str;
     async fn publish(&self, message: OutputMessage) -> Result<()>;
-    async fn subscribe(&self, subject: &str) -> Result<Receiver>;
+    async fn subscribe_to_topic(&self, subject: &str) -> Result<Receiver>;
 
     async fn publish_all(&self, messages: Vec<OutputMessage>) -> Result<()> {
         for msg in messages.into_iter() {
             self.publish(msg).await?;
         }
         Ok(())
+    }
+
+    async fn subscribe_to_request(&self, path: &str, method: &Option<String>) -> Result<Receiver> {
+        let method = method.clone().unwrap_or("*".to_string());
+        let path = path.replace('.', "_DOT_").replace('/', ".");
+        let sub = format!("request.*.{method}.{path}");
+        self.subscribe_to_topic(&sub).await
+    }
+
+    async fn subscribe_to_queue(&self, topic: &str, group: &str) -> Result<Receiver> {
+        let sub = format!("queue.{topic}.::.{group}");
+        self.subscribe_to_topic(&sub).await
+    }
+
+    async fn subscribe(&self, subscription: &SubscriptionType) -> Result<Receiver> {
+        match subscription {
+            SubscriptionType::Topic { topic, result: _ } => self.subscribe_to_topic(topic).await,
+            SubscriptionType::Request { path, method } => self.subscribe_to_request(path, method).await,
+            SubscriptionType::Queue { topic, group, result: _ } => self.subscribe_to_queue(topic, group).await,
+            SubscriptionType::None => bail!("No Subscription Type Set for {}", self.name())
+        }
     }
 
     fn generate_http_request_subjects(
@@ -71,7 +92,7 @@ pub trait MessageBroker: Send + Sync {
             resp
         };
 
-        let Ok(mut subscribe) = self.subscribe(&response_subject).await else {
+        let Ok(mut subscribe) = self.subscribe_to_topic(&response_subject).await else {
             bail!("Couldn't Subscribe");
         };
 

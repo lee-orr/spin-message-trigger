@@ -4,5 +4,6 @@ members = [
     "trigger-message",
     "spin-message-types",
     "example-app",
+    "queue-app",
     "request-response-demo"
 ]

@@ -111,7 +111,7 @@ impl MessageBroker for RedisBroker {
         Ok(())
     }
 
-    async fn subscribe(&self, subject: &str) -> Result<Receiver> {
+    async fn subscribe_to_topic(&self, subject: &str) -> Result<Receiver> {
         if let Some(sender) = self.map.get(subject) {
             Ok(sender.0.subscribe())
         } else {

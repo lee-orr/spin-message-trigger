@@ -104,6 +104,7 @@ impl TriggerExecutor for MessageTrigger {
     }
 
     async fn run(self, _config: Self::RunConfig) -> anyhow::Result<()> {
+        println!("Running message trigger");
         tokio::spawn(async move {
             tokio::signal::ctrl_c().await.unwrap();
             std::process::exit(0);
@@ -115,14 +116,7 @@ impl TriggerExecutor for MessageTrigger {
                 scope.spawn(async {
                     let config = config.clone();
                     let rx = if let Some(broker) = self.brokers.get(&config.broker) {
-                        let subscription = match &config.subscription {
-                            SubscriptionType::Topic { topic, result: _ } => topic.clone(),
-                            SubscriptionType::Request { path, method } => {
-                                broker.generate_request_subscription(path, method)
-                            }
-                            _ => "".to_string(),
-                        };
-                        broker.subscribe(&subscription).await.ok()
+                        broker.subscribe(&config.subscription).await.ok()
                     } else {
                         None
                     };
@@ -205,6 +199,7 @@ impl MessageTrigger {
 
         let default_result_target = match &config.subscription {
             SubscriptionType::Topic { topic: _, result } => result.as_ref(),
+            SubscriptionType::Queue { topic: _, group: _, result } => result.as_ref(),
             _ => None,
         };
 

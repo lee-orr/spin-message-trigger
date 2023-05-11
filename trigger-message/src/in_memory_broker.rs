@@ -54,7 +54,7 @@ impl MessageBroker for InMemoryBroker {
         Ok(())
     }
 
-    async fn subscribe(&self, subject: &str) -> Result<Receiver> {
+    async fn subscribe_to_topic(&self, subject: &str) -> Result<Receiver> {
         if let Some(sender) = self.map.get(subject) {
             Ok(sender.1.subscribe())
         } else {
@@ -85,7 +85,7 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx = broker.subscribe("message.test").await.unwrap();
+        let mut rx = broker.subscribe_to_topic("message.test").await.unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx.try_recv().unwrap();
@@ -105,7 +105,7 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx = broker.subscribe("message.wrong").await.unwrap();
+        let mut rx = broker.subscribe_to_topic("message.wrong").await.unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx.try_recv();
@@ -129,7 +129,7 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx = broker.subscribe("message.test").await.unwrap();
+        let mut rx = broker.subscribe_to_topic("message.test").await.unwrap();
 
         broker
             .publish_all(vec![message_1.clone(), message_2.clone()])
@@ -156,7 +156,7 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx = broker.subscribe("message.*").await.unwrap();
+        let mut rx = broker.subscribe_to_topic("message.*").await.unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx.try_recv().unwrap();
@@ -176,7 +176,7 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx = broker.subscribe("message.*").await.unwrap();
+        let mut rx = broker.subscribe_to_topic("message.*").await.unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx.try_recv();
