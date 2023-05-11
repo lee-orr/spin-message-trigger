@@ -30,7 +30,7 @@ pub trait MessageBroker: Send + Sync {
 
     fn generate_request_subjects(&self, path: &str, method: &http::Method) -> (String, String) {
         let request_id = ulid::Ulid::new();
-        let path = path.replace(".", "_DOT_").replace("/", ".");
+        let path = path.replace('.', "_DOT_").replace('/', ".");
         let subject_base = format!("{request_id}.{method}.{path}");
         let subject = format!("request.{subject_base}");
         let response_subject = format!("response.{subject_base}");
@@ -39,7 +39,7 @@ pub trait MessageBroker: Send + Sync {
 
     fn generate_request_subscription(&self, path: &str, method: &Option<String>) -> String {
         let method = method.clone().unwrap_or("*".to_string());
-        let path = path.replace(".", "_DOT_").replace("/", ".");
+        let path = path.replace('.', "_DOT_").replace('/', ".");
         format!("request.*.{method}.{path}")
     }
 
@@ -48,8 +48,9 @@ pub trait MessageBroker: Send + Sync {
         mut request: HttpRequest,
         serializer: &GatewayRequestResponseConfig,
     ) -> Result<HttpResponse> {
-        let (subject, response_subject) = self.generate_request_subjects(&request.path, &request.method);
-        
+        let (subject, response_subject) =
+            self.generate_request_subjects(&request.path, &request.method);
+
         request.request_subject = subject.clone();
         request.response_subject = response_subject.clone();
 

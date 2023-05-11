@@ -45,7 +45,7 @@ pub struct HttpRequest {
     pub path: String,
     pub body: Vec<u8>,
     pub request_subject: String,
-    pub response_subject: String
+    pub response_subject: String,
 }
 
 impl HttpRequest {

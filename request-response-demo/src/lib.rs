@@ -17,6 +17,8 @@ fn handle_message(message: HttpRequest) -> HttpResponse {
     HttpResponse {
         headers: Default::default(),
         status: StatusCode::OK,
-        body: format!("Path: {path}, Recieved: {body}").as_bytes().to_owned(),
+        body: format!("Path: {path}, Recieved: {body}")
+            .as_bytes()
+            .to_owned(),
     }
 }

@@ -143,7 +143,6 @@ async fn request_handler(
         let timeout = state.timeout.unwrap_or(2000);
         let timeout = Duration::from_millis(timeout);
 
-
         let request = HttpRequest {
             method: method.clone(),
             headers: headers.clone(),
@@ -151,7 +150,7 @@ async fn request_handler(
             path: path.clone(),
             body: bytes.to_vec(),
             request_subject: String::default(),
-            response_subject: String::default(),            
+            response_subject: String::default(),
         };
         match tokio::time::timeout(timeout, broker.request(request, serializer)).await {
             Ok(Ok(result)) => {
