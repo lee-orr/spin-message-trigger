@@ -1,16 +1,16 @@
 use std::{path::Path, sync::Arc, time::Duration};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use async_nats::{ConnectOptions, ServerAddr};
 use async_trait::async_trait;
 use dashmap::DashMap;
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use spin_message_types::{InputMessage, OutputMessage};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 
 use crate::broker::{
-    create_channel, default_message_response_subject, MessageBroker, Receiver, Sender,
+    create_channel, MessageBroker, Receiver, Sender,
 };
 
 #[derive(Clone, Debug)]
@@ -22,6 +22,7 @@ pub struct NatsBroker {
     map: Arc<DashMap<String, Subscription>>,
     subscription_handler: mpsc::Sender<(String, Sender)>,
     publish_handler: mpsc::Sender<(String, OutputMessage)>,
+    request_handler: mpsc::Sender<(String, OutputMessage, oneshot::Sender<InputMessage>)>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -122,9 +123,10 @@ impl NatsBroker {
     pub fn new(options: NatsConnectionInfo, name: String) -> Self {
         let (subscription_handler, sub_rx) = mpsc::channel(100);
         let (publish_handler, pub_rx) = mpsc::channel(100);
+        let (request_handler, req_rx) = mpsc::channel(100);
         let n = name.clone();
         tokio::spawn(async move {
-            if let Err(e) = NatsBroker::setup_client(n, options, sub_rx, pub_rx).await {
+            if let Err(e) = NatsBroker::setup_client(n, options, sub_rx, pub_rx, req_rx).await {
                 eprintln!("Nats Error: {e}");
             }
         });
@@ -134,6 +136,7 @@ impl NatsBroker {
             map: Default::default(),
             subscription_handler,
             publish_handler,
+            request_handler,
         }
     }
 
@@ -142,6 +145,7 @@ impl NatsBroker {
         options: NatsConnectionInfo,
         mut sub_rx: mpsc::Receiver<(String, Sender)>,
         mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
+        mut req_rx: mpsc::Receiver<(String, OutputMessage, oneshot::Sender<InputMessage>)>,
     ) -> Result<()> {
         let client = options.connect().await?;
         println!("Connected to NATS for {name}");
@@ -155,6 +159,35 @@ impl NatsBroker {
                     match result.await {
                         Ok(_) => println!("Published on NATS to {subject}"),
                         Err(e) => eprintln!("Failed to publish on NATS - {e:?}"),
+                    }
+                }
+            });
+        }
+        {
+            let client = client.clone();
+            let name = name.to_string();
+            tokio::spawn(async move {
+                while let Some((subject, message, response)) = req_rx.recv().await {
+                    let body = message.message;
+                    println!("Requesting on NATS to {subject}");
+                    let request = async_nats::Request::new().payload(body.into());
+                    let result = client.send_request(subject.clone(), request).await;
+                    match result {
+                        Ok(msg) => {
+                            let subject = msg.subject.clone();
+                            println!("Received NATS Response on {subject}");
+                            let body = msg.payload.to_vec();
+
+                            let _ = response.send(InputMessage {
+                                message: body,
+                                subject: subject.clone(),
+                                broker: name.clone(),
+                                response_subject: msg.reply,
+                            });
+                        }
+                        Err(e) => {
+                            eprintln!("Request/Response Failed - {e:?}");
+                        }
                     }
                 }
             });
@@ -174,7 +207,7 @@ impl NatsBroker {
                             message: body,
                             subject: subject.clone(),
                             broker: name.clone(),
-                            response_subject: default_message_response_subject(&subject),
+                            response_subject: msg.reply,
                         });
                     }
                 }
@@ -214,5 +247,22 @@ impl MessageBroker for NatsBroker {
                 .await?;
             Ok(sender.subscribe())
         }
+    }
+
+    async fn request(&self, request: OutputMessage) -> Result<InputMessage> {
+        let Some(subject) = request.subject.clone() else {
+            bail!("No subject set");
+        };
+
+        let (responder, reciever) = oneshot::channel();
+        self.request_handler
+            .send((subject.to_string(), request, responder))
+            .await?;
+
+        let Ok(result) = reciever.await else {
+            bail!("couldn't get result");
+        };
+
+        Ok(result)
     }
 }
