@@ -9,9 +9,7 @@ use serde::{Deserialize, Serialize};
 use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::{mpsc, oneshot};
 
-use crate::broker::{
-    create_channel, MessageBroker, Receiver, Sender,
-};
+use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
 
 #[derive(Clone, Debug)]
 pub struct Subscription(Sender);
