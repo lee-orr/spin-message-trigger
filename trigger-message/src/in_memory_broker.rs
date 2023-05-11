@@ -41,6 +41,7 @@ impl MessageBroker for InMemoryBroker {
             message: message.message,
             subject: subject.to_string(),
             broker: self.name.clone(),
+            response_subject: message.response_subject,
         };
         for r in self
             .map
@@ -79,6 +80,7 @@ mod test {
             subject: Some("message.test".to_string()),
             message: "test".as_bytes().to_owned(),
             broker: None,
+            response_subject: None,
         };
 
         let broker = InMemoryBroker::default();
@@ -98,6 +100,7 @@ mod test {
             subject: Some("message.test".to_string()),
             message: "test".as_bytes().to_owned(),
             broker: None,
+            response_subject: None,
         };
 
         let broker = InMemoryBroker::default();
@@ -115,11 +118,13 @@ mod test {
             subject: Some("message.test".to_string()),
             message: "test".as_bytes().to_owned(),
             broker: None,
+            response_subject: None,
         };
         let message_2 = OutputMessage {
             subject: Some("message.test".to_string()),
             message: "test 2".as_bytes().to_owned(),
             broker: None,
+            response_subject: None,
         };
 
         let broker = InMemoryBroker::default();
@@ -146,6 +151,7 @@ mod test {
             subject: Some("message.test".to_string()),
             message: "test".as_bytes().to_owned(),
             broker: None,
+            response_subject: None,
         };
 
         let broker = InMemoryBroker::default();
@@ -165,6 +171,7 @@ mod test {
             subject: Some("test.message".to_string()),
             message: "test".as_bytes().to_owned(),
             broker: None,
+            response_subject: None,
         };
 
         let broker = InMemoryBroker::default();

@@ -191,6 +191,7 @@ impl MessageTrigger {
             subject: &message.subject,
             message: &message.message,
             broker: &config.broker,
+            response_subject: message.response_subject.as_ref().map(|a| a.as_str()),
         };
 
         println!("ready for wasm");

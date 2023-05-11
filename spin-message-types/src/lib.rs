@@ -16,6 +16,7 @@ pub struct InputMessage {
     pub message: Vec<u8>,
     pub subject: String,
     pub broker: String,
+    pub response_subject: Option<String>
 }
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
@@ -23,6 +24,7 @@ pub struct OutputMessage {
     pub message: Vec<u8>,
     pub subject: Option<String>,
     pub broker: Option<String>,
+    pub response_subject: Option<String>
 }
 
 #[derive(Debug, Clone)]
@@ -44,8 +46,6 @@ pub struct HttpRequest {
     pub uri: Uri,
     pub path: String,
     pub body: Vec<u8>,
-    pub request_subject: String,
-    pub response_subject: String,
 }
 
 impl HttpRequest {
@@ -73,25 +73,25 @@ pub struct HttpResponse {
 }
 
 impl HttpResponse {
-    pub fn to_json_response(&self, response_subject: &str) -> Vec<OutputMessage> {
+    pub fn to_json_response(&self) -> Vec<OutputMessage> {
         match serde_json::to_string(&self) {
             Ok(value) => {
                 println!("Setting response json {value}");
                 vec![OutputMessage {
                     message: value.into_bytes(),
-                    subject: Some(response_subject.to_string()),
+                    subject: None,
                     ..Default::default()
                 }]
             }
             Err(_) => vec![],
         }
     }
-    pub fn to_msgpack_response(&self, response_subject: &str) -> Vec<OutputMessage> {
+    pub fn to_msgpack_response(&self) -> Vec<OutputMessage> {
         let mut buf = Vec::new();
         match self.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
             Ok(_) => vec![OutputMessage {
                 message: buf,
-                subject: Some(response_subject.to_string()),
+                subject: None,
                 ..Default::default()
             }],
             Err(_) => vec![],

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::mpsc;
 
-use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
+use crate::broker::{create_channel, MessageBroker, Receiver, Sender, default_message_response_subject};
 
 #[derive(Clone, Debug)]
 pub struct Subscription(Sender);
@@ -172,6 +172,7 @@ impl NatsBroker {
                             message: body,
                             subject: subject.clone(),
                             broker: name.clone(),
+                            response_subject: default_message_response_subject(&subject)
                         });
                     }
                 }

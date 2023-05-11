@@ -2,13 +2,15 @@ default interface spin-message-types {
     record internal-message {
         message: list<u8>,
         subject: string,
-        broker: string
+        broker: string,
+        response-subject: option<string>
     }
 
     record internal-output-message {
         message: list<u8>,
         subject: option<string>,
-        broker: option<string>
+        broker: option<string>,
+        response-subject: option<string>
     }
 
     variant outcome {
