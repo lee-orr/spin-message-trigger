@@ -19,3 +19,4 @@ rmp-serde = "1"
 wasmtime = { version = "8.0.1", features = ["component-model"], optional = true }
 wit-bindgen = { version = "0.6", optional = true }
 wit-bindgen-rust = { version = "0.6", optional = true }
+tokio = { version = "*", features = ["rt"]}
