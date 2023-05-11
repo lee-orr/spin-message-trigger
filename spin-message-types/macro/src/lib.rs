@@ -50,8 +50,9 @@ pub fn json_http_component(_attr: TokenStream, item: TokenStream) -> TokenStream
             #func
 
             if let Ok(http) = HttpRequest::from_json_message(&message) {
+                let response_subject = http.response_subject.clone();
                 let result : HttpResponse = #func_name(http);
-                Ok(result.to_json_response(message.subject.as_str()))
+                Ok(result.to_json_response(&response_subject))
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))
             }
@@ -73,8 +74,9 @@ pub fn msgpack_http_component(_attr: TokenStream, item: TokenStream) -> TokenStr
             #func
 
             if let Ok(http) = HttpRequest::from_msgpack_message(&message) {
+                let response_subject = http.response_subject.clone();
                 let result : HttpResponse = #func_name(http);
-                Ok(result.to_msgpack_response(message.subject.as_str()))
+                Ok(result.to_msgpack_response(&response_subject))
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))
             }

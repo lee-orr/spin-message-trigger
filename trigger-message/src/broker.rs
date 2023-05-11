@@ -28,17 +28,30 @@ pub trait MessageBroker: Send + Sync {
         Ok(())
     }
 
-    async fn request(
-        &self,
-        request: HttpRequest,
-        serializer: &GatewayRequestResponseConfig,
-    ) -> Result<HttpResponse> {
+    fn generate_request_subjects(&self, path: &str, method: &http::Method) -> (String, String) {
         let request_id = ulid::Ulid::new();
-        let path = &request.path.replace(".", "_DOT_").replace("/", ".");
-        let method = &request.method;
+        let path = path.replace(".", "_DOT_").replace("/", ".");
         let subject_base = format!("{request_id}.{method}.{path}");
         let subject = format!("request.{subject_base}");
         let response_subject = format!("response.{subject_base}");
+        (subject, response_subject)
+    }
+
+    fn generate_request_subscription(&self, path: &str, method: &Option<String>) -> String {
+        let method = method.clone().unwrap_or("*".to_string());
+        let path = path.replace(".", "_DOT_").replace("/", ".");
+        format!("request.*.{method}.{path}")
+    }
+
+    async fn request(
+        &self,
+        mut request: HttpRequest,
+        serializer: &GatewayRequestResponseConfig,
+    ) -> Result<HttpResponse> {
+        let (subject, response_subject) = self.generate_request_subjects(&request.path, &request.method);
+        
+        request.request_subject = subject.clone();
+        request.response_subject = response_subject.clone();
 
         let body = match serializer {
             GatewayRequestResponseConfig::Messagepack => {
@@ -59,7 +72,7 @@ pub trait MessageBroker: Send + Sync {
         };
 
         self.publish(OutputMessage {
-            subject: Some(subject),
+            subject: Some(subject.clone()),
             message: body,
             broker: None,
         })

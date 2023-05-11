@@ -118,9 +118,7 @@ impl TriggerExecutor for MessageTrigger {
                         let subscription = match &config.subscription {
                             SubscriptionType::Topic { topic, result: _ } => topic.clone(),
                             SubscriptionType::Request { path, method } => {
-                                let method = method.clone().unwrap_or("*".to_string());
-                                let path = path.replace(".", "_DOT_").replace("/", ".");
-                                format!("request.*.{method}.{path}")
+                                broker.generate_request_subscription(&path, method)
                             }
                             _ => "".to_string(),
                         };
