@@ -20,6 +20,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 - Additional broker support
 - support for queues
 - Support for basic event-sourcing structures
+- actor style trigger options
 
 ## Installation
 To install the plugin, run the following command on the system running your spin deployment (or any development machine):
