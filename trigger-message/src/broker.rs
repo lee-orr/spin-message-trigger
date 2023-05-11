@@ -15,6 +15,14 @@ pub fn create_channel(capacity: usize) -> Sender {
     sender
 }
 
+pub fn default_message_response_subject(subject: &str) -> Option<String> {
+    if subject.starts_with("request") {
+        Some(subject.replace("request", "response"))
+    } else {
+        None
+    }
+}
+
 #[async_trait]
 pub trait MessageBroker: Send + Sync {
     fn name(&self) -> &str;
@@ -28,17 +36,61 @@ pub trait MessageBroker: Send + Sync {
         Ok(())
     }
 
-    async fn request(
+    fn generate_http_request_subjects(
+        &self,
+        path: &str,
+        method: &http::Method,
+    ) -> (String, String) {
+        let request_id = ulid::Ulid::new();
+        let path = path.replace('.', "_DOT_").replace('/', ".");
+        let subject_base = format!("{request_id}.{method}.{path}");
+        let subject = format!("request.{subject_base}");
+        let response_subject = format!("response.{subject_base}");
+        (subject, response_subject)
+    }
+
+    fn generate_request_subscription(&self, path: &str, method: &Option<String>) -> String {
+        let method = method.clone().unwrap_or("*".to_string());
+        let path = path.replace('.', "_DOT_").replace('/', ".");
+        format!("request.*.{method}.{path}")
+    }
+
+    async fn request(&self, mut request: OutputMessage) -> Result<InputMessage> {
+        let Some(subject) = request.subject.clone() else {
+            bail!("No subject set");
+        };
+        let response_subject = if let Some(resp) = &request.response_subject {
+            resp.clone()
+        } else {
+            let resp = ulid::Ulid::new().to_string();
+            let req = format!("request.{resp}.{subject}");
+            let resp = format!("response.{resp}.{subject}");
+            request.subject = Some(req);
+            request.response_subject = Some(resp.clone());
+
+            resp
+        };
+
+        let Ok(mut subscribe) = self.subscribe(&response_subject).await else {
+            bail!("Couldn't Subscribe");
+        };
+
+        self.publish(request).await?;
+
+        let Ok(result) = subscribe.recv().await else {
+            bail!("couldn't get result");
+        };
+
+        Ok(result)
+    }
+
+    async fn http_request(
         &self,
         request: HttpRequest,
         serializer: &GatewayRequestResponseConfig,
     ) -> Result<HttpResponse> {
-        let request_id = ulid::Ulid::new();
-        let path = &request.path;
-        let method = &request.method;
-        let subject_base = format!("{request_id}.{method}.{path}");
-        let subject = format!("request.{subject_base}");
-        let response_subject = format!("response.{subject_base}");
+        let (subject, response_subject) =
+            self.generate_http_request_subjects(&request.path, &request.method);
 
         let body = match serializer {
             GatewayRequestResponseConfig::Messagepack => {
@@ -54,20 +106,18 @@ pub trait MessageBroker: Send + Sync {
             }
         };
 
-        let (Some(body), Ok(mut subscribe)) = (body, self.subscribe(&response_subject).await) else {
-            bail!("Couldn't Subscribe");
+        let Some(body) = body else {
+            bail!("Couldn't Serialize body");
         };
 
-        self.publish(OutputMessage {
-            subject: Some(subject),
-            message: body,
-            broker: None,
-        })
-        .await?;
-
-        let Ok(result) = subscribe.recv().await else {
-            bail!("couldn't get result");
-        };
+        let result = self
+            .request(OutputMessage {
+                subject: Some(subject.clone()),
+                message: body,
+                broker: None,
+                response_subject: Some(response_subject.clone()),
+            })
+            .await?;
 
         println!("Got Response: {result:?}");
 

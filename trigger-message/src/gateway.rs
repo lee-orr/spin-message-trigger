@@ -64,6 +64,7 @@ async fn publish(
             subject: Some(subject),
             message: body.to_vec(),
             broker: None,
+            response_subject: None,
         })
         .await
     {
@@ -150,7 +151,7 @@ async fn request_handler(
             path: path.clone(),
             body: bytes.to_vec(),
         };
-        match tokio::time::timeout(timeout, broker.request(request, serializer)).await {
+        match tokio::time::timeout(timeout, broker.http_request(request, serializer)).await {
             Ok(Ok(result)) => {
                 println!("Got Parsed Response: {result:?}");
                 (result.status, result.headers, result.body).into_response()

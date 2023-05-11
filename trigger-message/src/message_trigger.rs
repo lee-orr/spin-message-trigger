@@ -115,7 +115,14 @@ impl TriggerExecutor for MessageTrigger {
                 scope.spawn(async {
                     let config = config.clone();
                     let rx = if let Some(broker) = self.brokers.get(&config.broker) {
-                        broker.subscribe(&config.subscription).await.ok()
+                        let subscription = match &config.subscription {
+                            SubscriptionType::Topic { topic, result: _ } => topic.clone(),
+                            SubscriptionType::Request { path, method } => {
+                                broker.generate_request_subscription(path, method)
+                            }
+                            _ => "".to_string(),
+                        };
+                        broker.subscribe(&subscription).await.ok()
                     } else {
                         None
                     };
@@ -184,6 +191,7 @@ impl MessageTrigger {
             subject: &message.subject,
             message: &message.message,
             broker: &config.broker,
+            response_subject: message.response_subject.as_deref(),
         };
 
         println!("ready for wasm");
@@ -195,7 +203,12 @@ impl MessageTrigger {
 
         println!("Got result {result:?}");
 
-        match (result, &config.result) {
+        let default_result_target = match &config.subscription {
+            SubscriptionType::Topic { topic: _, result } => result.as_ref(),
+            _ => None,
+        };
+
+        match (result, default_result_target) {
             (
                 Outcome::Publish(msgs),
                 Some(MessageResultType {

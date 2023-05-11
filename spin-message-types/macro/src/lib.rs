@@ -14,7 +14,23 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 let message : spin_message_types::InputMessage = message.into();
                 #func
 
-                #func_name(message).into()
+                let response_subject = message.response_subject.clone();
+
+                let mut result = #func_name(message);
+
+                println!("Responding with {:?}", response_subject);
+
+                if let Ok(mut v) = result.as_mut() {
+                    for mut msg in v.iter_mut() {
+                        if msg.subject.is_none() {
+                            if let Some(response) = &response_subject {
+                                let _ = msg.subject.insert(response.clone());
+                            }
+                        }
+                    }
+                }
+
+                result.into()
             }
         }
 
@@ -22,8 +38,8 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
             #[doc(hidden)]
             #[export_name = "guest#handle-message"]
             #[allow(non_snake_case)]
-            unsafe extern "C" fn __export_guest_handle_message(arg0: i32,arg1: i32,arg2: i32,arg3: i32,arg4: i32,arg5: i32,) -> i32 {
-                spin_message_types::import::guest::call_handle_message::<Messages>(arg0,arg1,arg2,arg3,arg4,arg5,)
+            unsafe extern "C" fn __export_guest_handle_message(arg0: i32,arg1: i32,arg2: i32,arg3: i32,arg4: i32,arg5: i32, arg6: i32, arg7: i32, arg8: i32) -> i32 {
+                spin_message_types::import::guest::call_handle_message::<Messages>(arg0,arg1,arg2,arg3,arg4,arg5,arg6, arg7, arg8)
             }
 
             #[doc(hidden)]
@@ -51,7 +67,7 @@ pub fn json_http_component(_attr: TokenStream, item: TokenStream) -> TokenStream
 
             if let Ok(http) = HttpRequest::from_json_message(&message) {
                 let result : HttpResponse = #func_name(http);
-                Ok(result.to_json_response(message.subject.as_str()))
+                Ok(result.to_json_response())
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))
             }
@@ -74,7 +90,7 @@ pub fn msgpack_http_component(_attr: TokenStream, item: TokenStream) -> TokenStr
 
             if let Ok(http) = HttpRequest::from_msgpack_message(&message) {
                 let result : HttpResponse = #func_name(http);
-                Ok(result.to_msgpack_response(message.subject.as_str()))
+                Ok(result.to_msgpack_response())
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))
             }

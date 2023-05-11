@@ -12,6 +12,7 @@ impl From<crate::InputMessage> for spin_message_types::InternalMessage {
             message: value.message,
             broker: value.broker,
             subject: value.subject,
+            response_subject: value.response_subject,
         }
     }
 }
@@ -22,6 +23,7 @@ impl From<spin_message_types::InternalMessage> for crate::InputMessage {
             message: value.message,
             broker: value.broker,
             subject: value.subject,
+            response_subject: value.response_subject,
         }
     }
 }
@@ -32,6 +34,7 @@ impl From<crate::OutputMessage> for spin_message_types::InternalOutputMessage {
             message: value.message.into(),
             subject: value.subject,
             broker: value.broker,
+            response_subject: value.response_subject,
         }
     }
 }
@@ -42,6 +45,7 @@ impl From<spin_message_types::InternalOutputMessage> for crate::OutputMessage {
             message: value.message.into(),
             subject: value.subject,
             broker: value.broker,
+            response_subject: value.response_subject,
         }
     }
 }
