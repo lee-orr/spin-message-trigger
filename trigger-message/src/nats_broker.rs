@@ -19,6 +19,7 @@ pub struct NatsBroker {
     name: String,
     map: Arc<DashMap<String, Subscription>>,
     subscription_handler: mpsc::Sender<(String, Sender)>,
+    queue_handler: mpsc::Sender<(String, String, Sender)>,
     publish_handler: mpsc::Sender<(String, OutputMessage)>,
     request_handler: mpsc::Sender<(String, OutputMessage, oneshot::Sender<InputMessage>)>,
 }
@@ -122,9 +123,10 @@ impl NatsBroker {
         let (subscription_handler, sub_rx) = mpsc::channel(100);
         let (publish_handler, pub_rx) = mpsc::channel(100);
         let (request_handler, req_rx) = mpsc::channel(100);
+        let (queue_handler, queue_rx) = mpsc::channel(100);
         let n = name.clone();
         tokio::spawn(async move {
-            if let Err(e) = NatsBroker::setup_client(n, options, sub_rx, pub_rx, req_rx).await {
+            if let Err(e) = NatsBroker::setup_client(n, options, sub_rx, pub_rx, req_rx, queue_rx).await {
                 eprintln!("Nats Error: {e}");
             }
         });
@@ -135,6 +137,7 @@ impl NatsBroker {
             subscription_handler,
             publish_handler,
             request_handler,
+            queue_handler
         }
     }
 
@@ -144,6 +147,7 @@ impl NatsBroker {
         mut sub_rx: mpsc::Receiver<(String, Sender)>,
         mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
         mut req_rx: mpsc::Receiver<(String, OutputMessage, oneshot::Sender<InputMessage>)>,
+        mut queue_rx: mpsc::Receiver<(String, String, Sender)>
     ) -> Result<()> {
         let client = options.connect().await?;
         println!("Connected to NATS for {name}");
@@ -187,6 +191,32 @@ impl NatsBroker {
                             eprintln!("Request/Response Failed - {e:?}");
                         }
                     }
+                }
+            });
+        }
+        {
+            let client = client.clone();
+            let name = name.to_string();
+            tokio::spawn(async move {
+                while let Some((subject, group, sender)) = queue_rx.recv().await {
+                    let client = client.clone();
+                    let name = name.to_string();
+                    tokio::spawn(async move {
+                        if let Ok(mut pubsub) = client.queue_subscribe(subject.clone(), group.clone()).await {
+                            println!("Queue subscribed to async_nats: {subject} - {group}");
+                            while let Some(msg) = pubsub.next().await {
+                                let subject = msg.subject.clone();
+                                println!("Received Queued NATS Message on {subject} - {group}");
+                                let body = msg.payload.to_vec();
+                                let _ = sender.send(InputMessage {
+                                    message: body,
+                                    subject: subject.clone(),
+                                    broker: name.clone(),
+                                    response_subject: msg.reply,
+                                });
+                            }
+                        }
+                    });
                 }
             });
         }
@@ -247,8 +277,12 @@ impl MessageBroker for NatsBroker {
         }
     }
 
-    async fn subscribe_to_queue(&self, _topic: &str, _group: &str) -> Result<QueueReceiver> {
-        todo!()
+    async fn subscribe_to_queue(&self, topic: &str, group: &str) -> Result<QueueReceiver> {
+        let sender = create_channel(100);
+        self.queue_handler
+            .send((topic.to_string(), group.to_string(), sender.clone()))
+            .await?;
+        Ok(sender.subscribe())
     }
 
     async fn request(&self, request: OutputMessage) -> Result<InputMessage> {

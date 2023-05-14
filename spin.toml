@@ -14,8 +14,8 @@ broker_type = "InMemoryBroker"
 port = 3_005
 request_response = "Json"
 
-[trigger.brokers.secondary.broker_type.Nats]
-addresses = ["nats"]
+[trigger.brokers.secondary.broker_type]
+Redis = "redis://redis:6379"
 
 
 [trigger.brokers.secondary.gateway.Http]
@@ -65,7 +65,7 @@ id = "queue_1"
 source = "./target/wasm32-wasi/release/queue_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
-broker = "test"
+broker = "secondary"
 [component.trigger.subscription.Queue]
 topic = "test"
 group = "queue"
@@ -80,7 +80,7 @@ id = "queue_2"
 source = "./target/wasm32-wasi/release/queue_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
-broker = "test"
+broker = "secondary"
 [component.trigger.subscription.Queue]
 topic = "test"
 group = "queue"
