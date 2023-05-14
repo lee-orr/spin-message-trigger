@@ -1,0 +1,20 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"command": "cargo clippy --fix --allow-dirty && cargo fmt",
+			"label": "Clippy + Fmt"
+		},
+		{
+			"type": "shell",
+			"command": "./update-plugin.sh",
+			"label": "Update Plugin"
+		},
+		{
+			"type": "shell",
+			"command": "spin build && spin up",
+			"label": "Spin Up"
+		},
+	]
+}

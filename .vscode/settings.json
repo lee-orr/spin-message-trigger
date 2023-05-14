@@ -1,3 +1,9 @@
 {
-    "thunder-client.defaultUrl": "http://localhost:3005/publish/hello.there"
+    "thunder-client.defaultUrl": "http://localhost:3005/publish/hello.there",
+    "VsCodeTaskButtons.showCounter": false,
+    "VsCodeTaskButtons.tasks": [
+        {"label": "Clippy", "task": "Clippy + Fmt"},
+        {"label": "Update", "task": "Update Plugin"},
+        {"label": "Spin", "task": "Spin Up"},
+    ]
 }
