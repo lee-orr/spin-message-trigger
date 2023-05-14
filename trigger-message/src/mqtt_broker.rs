@@ -88,7 +88,9 @@ impl MqttBroker {
             let client = client.clone();
             tokio::spawn(async move {
                 while let Some((subject, message)) = pub_rx.recv().await {
-                    let body = message.message;
+                    let Ok(body) = rmp_serde::to_vec(&message) else {
+                        continue;
+                    };
                     println!("Publishing on MQTT to {subject}");
                     let result: Result<(), ClientError> = client
                         .publish(subject.clone(), rumqttc::QoS::AtLeastOnce, false, body)
@@ -106,6 +108,7 @@ impl MqttBroker {
             let name = name.to_string();
             tokio::spawn(async move {
                 while let Some((subject, group)) = queue_rx.recv().await {
+                    println!("MQTT Queue Subscribe to {subject} {group}");
                     client
                         .subscribe(
                             format!("$share/{group}/{subject}"),
@@ -120,6 +123,7 @@ impl MqttBroker {
             let name = name.to_string();
             tokio::spawn(async move {
                 while let Some((subject)) = sub_rx.recv().await {
+                    println!("MQTT Subscribe to {subject}");
                     client
                         .subscribe(format!("{subject}"), rumqttc::QoS::AtLeastOnce)
                         .await;
@@ -134,15 +138,12 @@ impl MqttBroker {
                     match notification {
                         rumqttc::Event::Incoming(event) => match event {
                             rumqttc::Packet::Publish(msg) => {
-                                let topic = msg.topic.replace("/", ".").replace("+", "*");
                                 let payload = msg.payload;
+                                let Ok(message) = rmp_serde::from_slice(&payload) else {
+                                    continue;
+                                };
                                 let _ = local_broker
-                                    .publish(OutputMessage {
-                                        message: payload.to_vec(),
-                                        subject: Some(topic),
-                                        broker: None,
-                                        response_subject: None,
-                                    })
+                                    .publish(message)
                                     .await;
                             }
                             _ => {}
@@ -175,9 +176,8 @@ impl MessageBroker for MqttBroker {
             .as_deref()
             .ok_or(anyhow::Error::msg("No Subject To Publish"))?;
         self.publish_handler
-            .send((subject.to_string(), message.clone()))
+            .send((subject.replace(".", "/").replace("*", "+"), message.clone()))
             .await?;
-        self.local_broker.publish(message).await?;
         Ok(())
     }
 

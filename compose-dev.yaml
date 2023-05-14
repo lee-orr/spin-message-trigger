@@ -25,10 +25,7 @@ services:
       - "6379:6379"
 
   mqtt:
-    image: eclipse-mosquitto:latest
-    volumes:
-      - ./mosquitto:/mosquitto/config:cached
+    image: hivemq/hivemq4
     ports:
       - 1883:1883
       - 9001:9001
-    command: sleep infinity
