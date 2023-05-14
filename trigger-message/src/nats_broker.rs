@@ -126,7 +126,9 @@ impl NatsBroker {
         let (queue_handler, queue_rx) = mpsc::channel(100);
         let n = name.clone();
         tokio::spawn(async move {
-            if let Err(e) = NatsBroker::setup_client(n, options, sub_rx, pub_rx, req_rx, queue_rx).await {
+            if let Err(e) =
+                NatsBroker::setup_client(n, options, sub_rx, pub_rx, req_rx, queue_rx).await
+            {
                 eprintln!("Nats Error: {e}");
             }
         });
@@ -137,7 +139,7 @@ impl NatsBroker {
             subscription_handler,
             publish_handler,
             request_handler,
-            queue_handler
+            queue_handler,
         }
     }
 
@@ -147,7 +149,7 @@ impl NatsBroker {
         mut sub_rx: mpsc::Receiver<(String, Sender)>,
         mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
         mut req_rx: mpsc::Receiver<(String, OutputMessage, oneshot::Sender<InputMessage>)>,
-        mut queue_rx: mpsc::Receiver<(String, String, Sender)>
+        mut queue_rx: mpsc::Receiver<(String, String, Sender)>,
     ) -> Result<()> {
         let client = options.connect().await?;
         println!("Connected to NATS for {name}");
@@ -202,7 +204,9 @@ impl NatsBroker {
                     let client = client.clone();
                     let name = name.to_string();
                     tokio::spawn(async move {
-                        if let Ok(mut pubsub) = client.queue_subscribe(subject.clone(), group.clone()).await {
+                        if let Ok(mut pubsub) =
+                            client.queue_subscribe(subject.clone(), group.clone()).await
+                        {
                             println!("Queue subscribed to async_nats: {subject} - {group}");
                             while let Some(msg) = pubsub.next().await {
                                 let subject = msg.subject.clone();

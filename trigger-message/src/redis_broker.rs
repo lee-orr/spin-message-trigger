@@ -144,7 +144,7 @@ impl RedisBroker {
                 };
 
                 let subscription = format!("{subject}:rt:{group}");
-                
+
                 let Ok(connection) = cloned.get_tokio_connection().await else {
                     eprintln!("Couldn't get redis connectio - for queue n");
                     return;
@@ -153,7 +153,7 @@ impl RedisBroker {
                 if let Ok(()) = pubsub.psubscribe(subscription.clone()).await {
                     let mut msgs = pubsub.on_message();
                     println!("Subscribed to redis queue: {subject} - {group}");
-                    while let Some(_) = msgs.next().await {
+                    while (msgs.next().await).is_some() {
                         if let Ok(Some(body)) = rsmq.pop_message::<Vec<u8>>(&group).await {
                             let _ = sender.send(InputMessage {
                                 message: body.message,
