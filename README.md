@@ -25,7 +25,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 ## Installation
 To install the plugin, run the following command on the system running your spin deployment (or any development machine):
 ```bash
-spin plugin install --url https://github.com/lee-orr/spin-message-trigger/releases/download/v0.0.6/trigger-message.json --yes
+spin plugin install --url https://github.com/lee-orr/spin-message-trigger/releases/download/canary/trigger-message.json --yes
 ```
 
 ## Usage
