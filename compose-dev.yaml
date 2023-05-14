@@ -26,6 +26,9 @@ services:
 
   mqtt:
     image: eclipse-mosquitto:latest
+    volumes:
+      - ./mosquitto:/mosquitto/config:cached
     ports:
       - 1883:1883
       - 9001:9001
+    command: sleep infinity

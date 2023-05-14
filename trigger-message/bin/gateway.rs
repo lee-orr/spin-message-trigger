@@ -56,6 +56,10 @@ async fn main() -> Result<(), Error> {
             options,
             broker_key.clone(),
         )),
+        BrokerTypeConfig::Mqtt(options) => Arc::new(trigger_message::mqtt_broker::MqttBroker::new(
+            options,
+            broker_key.clone(),
+        )),
     };
 
     spawn_gateway(port, websockets.clone(), broker, request_response, timeout).await;
