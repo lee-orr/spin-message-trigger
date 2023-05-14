@@ -29,7 +29,8 @@
 				"rangav.vscode-thunder-client",
 				"Odiriuss.rust-macro-expand",
 				"mohamed-nouri.websocket-client",
-				"github.vscode-github-actions"
+				"github.vscode-github-actions",
+				"spencerwmiles.vscode-task-buttons"
 			]
 		}
 	}

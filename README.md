@@ -15,10 +15,10 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 - Trigger a Spin component from a message on a subscribed channel
 - Publish messages from the Spin component - defaulting to the same broker & subject, but optionally setting other defaults or manually setting the broker & subject for each message
 - Run the HTTP gateway server independently of the main spin app (doesn't really work for the in memory broker, but works for others)
+- Multiple message paradigms - Pub/Sub, Request/Response & Queues
 
 ### Desired Features
 - Additional broker support
-- support for queues
 - Support for basic event-sourcing structures
 - actor style trigger options
 
@@ -171,29 +171,41 @@ The subjects follow the following format: `request.*request_id*.*method*.*path*`
 The component definition contains a trigger secion, which contains information used to determine triggering & responses for this component.
 Specifically - the `broker` field takes the name of the broker this compoment gets triggered by, and the `subscription` field, which takes an object configuring the subscription.
 
-A component can either subscribe to a `Topic` or a `Request`.
+A component can either subscribe to a `Topic`, a `Request` or a `Queue`.
 
-In the case of a `Topic`, it takes a `topic` string representing the topic being subscribed to - based on the conventions of the specific broker, and an optional `result` field that allows setting up a defaults for published result messages, allowing them to target a different default broker and subject.
+#### General Configuration
+The main portion of the general configuration is setting the broker you wish to subscribe to, along with any other common spin component configuration options.
 
-Here is one of the component definitions in the example:
 ```toml
 [[component]]
 id = "hello"
 source = "./target/wasm32-wasi/release/example_app.wasm"
 allowed_http_hosts = []
 [component.trigger]
-# Here we set up the trigger to subscribe to any messaged published to a subject matching "hello.*" on the "test" broker
+# Here we set up the broker we want to subscribe to
 broker = "test"
-[component.trigger.subscription.Topic]
-topic = "hello.*"
-result = { default_broker = "secondary", default_subject = "good.bye" }
-# Here we set up alternative default publishing targets for this component - so by default it sends messages to the "good.bye" subject on the "secondary" broker
-result = { default_broker = "secondary", default_subject = "good.bye" }
 [component.build]
 command = "cargo build --target wasm32-wasi --release -p example-app"
 ```
 
-Alternatively, for a `Request`, you provide a `path` & an optional `method` - like so:
+
+#### Topic Subscriptions
+
+A `Topic` subscription takes a `topic` string representing the topic being subscribed to - based on the conventions of the specific broker, and an optional `result` field that allows setting up a defaults for published result messages, allowing them to target a different default broker and subject.
+
+Here is one of the component definitions in the example:
+```toml
+[component.trigger.subscription.Topic]
+# Here we set up the topic
+topic = "hello.*"
+# Here we set up alternative default publishing targets for this component - so by default it sends messages to the "good.bye" subject on the "secondary" broker
+result = { default_broker = "secondary", default_subject = "good.bye" }
+```
+
+#### Request / Response
+
+A `Request` requires a `path` & an optional `method`, similar to an HTTP router.
+
 ```toml
 [component.trigger.subscription.Request]
 path = "test/*/hello"
@@ -201,6 +213,17 @@ method = "POST"
 
 ```
 Note that the path supports segment wildcards, but not variables at the moment.
+
+#### Queues
+
+A `Queue` requires a `topic` to subscribe to, and a `group` which names the queue for which only one subscriber will receive each message.
+```toml
+
+[component.trigger.subscription.Queue]
+topic = "test"
+group = "queue"
+```
+
 
 ## Run the Gateway Independently
 You can build the gateway independantly using `cargo build -b gateway` and run it uusing `cargo run -b gateway`. However, it cannot parse the gateway definitions from the spin toml, since it's built primarily for situations where you might host the gateway separately from the actual spin app.

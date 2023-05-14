@@ -25,9 +25,11 @@ spin-message-types = { path = "../spin-message-types", features = ["export"] }
 serde_json = "*"
 rmp-serde = "*"
 wildmatch = "2"
-redis = { version = "0.23", features = [ "tokio-comp" ] }
+redis = { version = "0.23", features = [ "tokio-comp", "aio" ] }
 async-nats = "0.29"
 nkeys = "0.2"
 ulid = "1"
 serde_qs = "*"
 http = "0.2"
+crossbeam-queue = "0.3"
+rsmq_async = "*"

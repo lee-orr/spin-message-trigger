@@ -6,6 +6,8 @@ wit_bindgen::generate!({
     world: "spin-message-trigger"
 });
 
+pub use config::{get_config, Error};
+
 impl From<crate::InputMessage> for spin_message_types::InternalMessage {
     fn from(value: crate::InputMessage) -> Self {
         Self {

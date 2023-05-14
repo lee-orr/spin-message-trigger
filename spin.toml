@@ -14,8 +14,8 @@ broker_type = "InMemoryBroker"
 port = 3_005
 request_response = "Json"
 
-[trigger.brokers.secondary.broker_type.Nats]
-addresses = ["nats"]
+[trigger.brokers.secondary.broker_type]
+Redis = "redis://redis:6379"
 
 
 [trigger.brokers.secondary.gateway.Http]
@@ -59,3 +59,33 @@ path = "test/*/hello"
 method = "POST"
 [component.build]
 command = "cargo build --target wasm32-wasi --release -p request-response-demo"
+
+[[component]]
+id = "queue_1"
+source = "./target/wasm32-wasi/release/queue_app.wasm"
+allowed_http_hosts = []
+[component.trigger]
+broker = "secondary"
+[component.trigger.subscription.Queue]
+topic = "test"
+group = "queue"
+result = { default_broker = "test", default_subject = "sink" }
+[component.config]
+queue_id = "1"
+[component.build]
+command = "cargo build --target wasm32-wasi -p queue-app --release"
+
+[[component]]
+id = "queue_2"
+source = "./target/wasm32-wasi/release/queue_app.wasm"
+allowed_http_hosts = []
+[component.trigger]
+broker = "secondary"
+[component.trigger.subscription.Queue]
+topic = "test"
+group = "queue"
+result = { default_broker = "test", default_subject = "sink" }
+[component.config]
+queue_id = "2"
+[component.build]
+command = "cargo build --target wasm32-wasi -p queue-app --release"
