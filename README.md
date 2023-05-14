@@ -11,7 +11,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 - Named brokers - allowing multiple brokers of the same or different types in a single application
     - this is designed to support usecases such as separating the publishing of internal domain events & public events meant for others to consume
 - an HTTP gateway server for publishing messages to the broker, as well as some request/response support
-- a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker)
+- a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker), as well as bi-directional socket communication
 - Trigger a Spin component from a message on a subscribed channel
 - Publish messages from the Spin component - defaulting to the same broker & subject, but optionally setting other defaults or manually setting the broker & subject for each message
 - Run the HTTP gateway server independently of the main spin app (doesn't really work for the in memory broker, but works for others)
@@ -138,6 +138,7 @@ Each broker can have an HTTP gateway defined for accessing it. The gateways expo
 - `/publish/*subject*` - an HTTP post to this route will send the body of the request to the subject in the route.
 - `/subscribe/*subject*` - this is a route for WebSocket's to subscribe for updates on the subject, with support for pattern matching as provided by the broker.
 - `/request/*path*` - this route will serialize any request sent to it into a message, publish it to a specifically formatted subject, and then recieve a response from the first published message on another specifically formatted subject.
+- `/ws` - this is a rout for supporting bi-directional, multi-subject websocket connections.
 
 If you wish to enable a gateway, you can define the gateway like so:
 ```toml
@@ -229,6 +230,42 @@ group = "queue"
 You can build the gateway independantly using `cargo build -b gateway` and run it uusing `cargo run -b gateway`. However, it cannot parse the gateway definitions from the spin toml, since it's built primarily for situations where you might host the gateway separately from the actual spin app.
 
 As such - you configure it via the cli arguments. To get the up-to-date arguments, run `cargo run --bin gateway -- -h`. It's important to note that the broker is parsed as a query string. As such - a redis broker might be: `cargo run --bin gateway -- --broker Redis=redis://redis:6379` while a nats broker might be: `cargo run --bin gateway -- --broker Nats[addresses][0]="nats"`. It defaults to port `3015`.
+
+## Bi-Directional Websockets
+Bi-directional websockets rely on a simple protocol, encoded in either Json or Msgpack (based on whether websocket subscriptions rely on binary or text).
+
+To subscribe to a topic, the client should send a message with the following structure:
+```typescript
+{
+    "Subscribe": "good.*" 
+}
+
+```
+
+The client will receive messages encoding the following structure:
+```typescript
+{
+    message: Array<u8>, // an array representing the contents of the message
+    subject: String, // the subject the message was published on
+    broker: String, // the name of the broker in the config file
+    response_subject: Option<String> // if it is a request/response, send the response to this subject
+}
+
+```
+
+The client can also publish messages with the following structure:
+```typescript
+{
+    "Publish": {
+        "message": Array<u8>,
+        "subject": "good.test",
+        "response_subject": Option<String>
+    }
+}
+
+```
+
+
 
 ## Development
 This repository is set up to function as either a Dev Container (using VsCode). This means you can use Github workspaces to get it set up automatically, or use VSCodes "Clone Repository into Volume" option to clone the repo & build the dev environment for you.
