@@ -50,9 +50,15 @@ pub trait MessageBroker: Send + Sync {
     async fn subscribe(&self, subscription: &SubscriptionType) -> Result<Receiver> {
         match subscription {
             SubscriptionType::Topic { topic, result: _ } => self.subscribe_to_topic(topic).await,
-            SubscriptionType::Request { path, method } => self.subscribe_to_request(path, method).await,
-            SubscriptionType::Queue { topic, group, result: _ } => self.subscribe_to_queue(topic, group).await,
-            SubscriptionType::None => bail!("No Subscription Type Set for {}", self.name())
+            SubscriptionType::Request { path, method } => {
+                self.subscribe_to_request(path, method).await
+            }
+            SubscriptionType::Queue {
+                topic,
+                group,
+                result: _,
+            } => self.subscribe_to_queue(topic, group).await,
+            SubscriptionType::None => bail!("No Subscription Type Set for {}", self.name()),
         }
     }
 

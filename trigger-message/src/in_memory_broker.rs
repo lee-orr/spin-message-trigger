@@ -1,4 +1,7 @@
-use std::sync::{Arc, atomic::{self, AtomicUsize}};
+use std::sync::{
+    atomic::{self, AtomicUsize},
+    Arc,
+};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -6,7 +9,7 @@ use dashmap::DashMap;
 use spin_message_types::{InputMessage, OutputMessage};
 use wildmatch::*;
 
-use crate::broker::{create_channel, MessageBroker, Receiver, Sender, QueueReceiver, QueueSender};
+use crate::broker::{create_channel, MessageBroker, QueueReceiver, QueueSender, Receiver, Sender};
 
 #[derive(Clone, Debug)]
 pub struct Subscription(WildMatch, Sender);
@@ -26,7 +29,7 @@ impl InMemoryBroker {
         Self {
             name,
             topic_subscriptions: Default::default(),
-            queue_subscriptions: Default::default()
+            queue_subscriptions: Default::default(),
         }
     }
 }
@@ -90,16 +93,15 @@ impl MessageBroker for InMemoryBroker {
         let subject = format!("{topic}::{group}");
         if let Some(mut group) = self.queue_subscriptions.get_mut(&subject) {
             let sender = create_channel(10);
-            
+
             group.1.push(sender.clone());
-            
+
             Ok(sender.subscribe())
         } else {
             let sender = create_channel(10);
             let wildmatch = WildMatch::new(topic);
             let group = QueueGroup(wildmatch, vec![sender.clone()], Arc::new(0.into()));
-            self.queue_subscriptions
-                .insert(subject.to_string(), group);
+            self.queue_subscriptions.insert(subject.to_string(), group);
             Ok(sender.subscribe())
         }
     }
@@ -232,7 +234,10 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx = broker.subscribe_to_queue("message.test", "group").await.unwrap();
+        let mut rx = broker
+            .subscribe_to_queue("message.test", "group")
+            .await
+            .unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx.try_recv().expect("Should Successfully Recieve");
@@ -252,8 +257,14 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx1 = broker.subscribe_to_queue("message.test", "group").await.unwrap();
-        let mut rx2 = broker.subscribe_to_queue("message.test", "group").await.unwrap();
+        let mut rx1 = broker
+            .subscribe_to_queue("message.test", "group")
+            .await
+            .unwrap();
+        let mut rx2 = broker
+            .subscribe_to_queue("message.test", "group")
+            .await
+            .unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx1.try_recv().expect("Should Successfully Recieve");
@@ -274,8 +285,14 @@ mod test {
 
         let broker = InMemoryBroker::default();
 
-        let mut rx1 = broker.subscribe_to_queue("message.test", "group").await.unwrap();
-        let mut rx2 = broker.subscribe_to_queue("message.test", "group").await.unwrap();
+        let mut rx1 = broker
+            .subscribe_to_queue("message.test", "group")
+            .await
+            .unwrap();
+        let mut rx2 = broker
+            .subscribe_to_queue("message.test", "group")
+            .await
+            .unwrap();
 
         broker.publish(message.clone()).await.unwrap();
         let result = rx1.try_recv().expect("Should Successfully Recieve");

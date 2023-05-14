@@ -199,7 +199,11 @@ impl MessageTrigger {
 
         let default_result_target = match &config.subscription {
             SubscriptionType::Topic { topic: _, result } => result.as_ref(),
-            SubscriptionType::Queue { topic: _, group: _, result } => result.as_ref(),
+            SubscriptionType::Queue {
+                topic: _,
+                group: _,
+                result,
+            } => result.as_ref(),
             _ => None,
         };
 

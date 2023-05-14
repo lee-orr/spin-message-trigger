@@ -100,7 +100,7 @@ pub enum SubscriptionType {
         topic: String,
         group: String,
         result: Option<MessageResultType>,
-    }
+    },
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
