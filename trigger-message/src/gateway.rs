@@ -214,29 +214,26 @@ async fn websocket_subscribe(
     websockets: configs::WebsocketConfig,
     sender: tokio::sync::mpsc::Sender<WsMessage>,
 ) {
+    let is_binary = match websockets {
+        configs::WebsocketConfig::BinaryBody => true,
+        configs::WebsocketConfig::TextBody => false,
+        configs::WebsocketConfig::Messagepack => true,
+        configs::WebsocketConfig::Json => false,
+    };
+
     if let Ok(mut result) = broker.subscribe_to_topic(&subject).await {
         println!("subscribed to {subject}");
         while let Ok(message) = result.recv().await {
             println!("socket subscription message recieved");
-            match websockets {
-                configs::WebsocketConfig::BinaryBody => {
-                    let _ = sender.send(WsMessage::Binary(message.message)).await;
-                    println!("socket subscription message sent");
-                }
-                configs::WebsocketConfig::TextBody => {
-                    if let Ok(body) = std::str::from_utf8(&message.message) {
-                        let _ = sender.send(WsMessage::Text(body.to_string())).await;
-                        println!("socket subscription message sent");
-                    }
-                }
-                configs::WebsocketConfig::Messagepack => {
+            match is_binary {
+                true => {
                     let mut buf = Vec::new();
                     if let Ok(()) = message.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
                         let _ = sender.send(WsMessage::Binary(buf)).await;
                         println!("socket subscription messagepack sent");
                     }
                 }
-                configs::WebsocketConfig::Json => {
+                false => {
                     if let Ok(json) = serde_json::to_string(&message) {
                         let _ = sender.send(WsMessage::Text(json)).await;
                         println!("socket subscription message json sent");
