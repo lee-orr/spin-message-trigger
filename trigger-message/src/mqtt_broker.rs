@@ -1,16 +1,15 @@
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use dashmap::DashMap;
-use futures::StreamExt;
+
 use rumqttc::{AsyncClient, ClientError, EventLoop, MqttOptions};
 use serde::{Deserialize, Serialize};
-use spin_message_types::{InputMessage, OutputMessage};
-use tokio::sync::{mpsc, oneshot};
+use spin_message_types::OutputMessage;
+use tokio::sync::mpsc;
 
 use crate::{
-    broker::{create_channel, MessageBroker, QueueReceiver, Receiver, Sender},
+    broker::{MessageBroker, QueueReceiver, Receiver, Sender},
     in_memory_broker::InMemoryBroker,
 };
 
@@ -21,7 +20,7 @@ pub struct Subscription(Sender);
 pub struct MqttBroker {
     name: String,
     local_broker: Arc<InMemoryBroker>,
-    subscription_handler: mpsc::Sender<(String)>,
+    subscription_handler: mpsc::Sender<String>,
     queue_handler: mpsc::Sender<(String, String)>,
     publish_handler: mpsc::Sender<(String, OutputMessage)>,
 }
@@ -77,7 +76,7 @@ impl MqttBroker {
     async fn setup_client(
         name: String,
         options: MqttConnectionInfo,
-        mut sub_rx: mpsc::Receiver<(String)>,
+        mut sub_rx: mpsc::Receiver<String>,
         mut pub_rx: mpsc::Receiver<(String, OutputMessage)>,
         mut queue_rx: mpsc::Receiver<(String, String)>,
         local_broker: Arc<InMemoryBroker>,
@@ -105,11 +104,11 @@ impl MqttBroker {
 
         {
             let client = client.clone();
-            let name = name.to_string();
+            let _name = name.to_string();
             tokio::spawn(async move {
                 while let Some((subject, group)) = queue_rx.recv().await {
                     println!("MQTT Queue Subscribe to {subject} {group}");
-                    client
+                    let _ = client
                         .subscribe(
                             format!("$share/{group}/{subject}"),
                             rumqttc::QoS::AtLeastOnce,
@@ -120,12 +119,12 @@ impl MqttBroker {
         }
         {
             let client = client.clone();
-            let name = name.to_string();
+            let _name = name.to_string();
             tokio::spawn(async move {
-                while let Some((subject)) = sub_rx.recv().await {
+                while let Some(subject) = sub_rx.recv().await {
                     println!("MQTT Subscribe to {subject}");
-                    client
-                        .subscribe(format!("{subject}"), rumqttc::QoS::AtLeastOnce)
+                    let _ = client
+                        .subscribe(subject.to_string(), rumqttc::QoS::AtLeastOnce)
                         .await;
                 }
             });
@@ -135,20 +134,12 @@ impl MqttBroker {
             match event_loop.poll().await {
                 Ok(notification) => {
                     println!("MQTT Event {notification:?}");
-                    match notification {
-                        rumqttc::Event::Incoming(event) => match event {
-                            rumqttc::Packet::Publish(msg) => {
-                                let payload = msg.payload;
-                                let Ok(message) = rmp_serde::from_slice(&payload) else {
-                                    continue;
-                                };
-                                let _ = local_broker
-                                    .publish(message)
-                                    .await;
-                            }
-                            _ => {}
-                        },
-                        rumqttc::Event::Outgoing(_) => {}
+                    if let rumqttc::Event::Incoming(rumqttc::Packet::Publish(msg)) = notification {
+                        let payload = msg.payload;
+                        let Ok(message) = rmp_serde::from_slice(&payload) else {
+                            continue;
+                        };
+                        let _ = local_broker.publish(message).await;
                     };
                 }
                 Err(e) => {
@@ -176,21 +167,21 @@ impl MessageBroker for MqttBroker {
             .as_deref()
             .ok_or(anyhow::Error::msg("No Subject To Publish"))?;
         self.publish_handler
-            .send((subject.replace(".", "/").replace("*", "+"), message.clone()))
+            .send((subject.replace('.', "/").replace('*', "+"), message.clone()))
             .await?;
         Ok(())
     }
 
     async fn subscribe_to_topic(&self, subject: &str) -> Result<Receiver> {
         self.subscription_handler
-            .send((subject.replace(".", "/").replace("*", "+")))
+            .send(subject.replace('.', "/").replace('*', "+"))
             .await?;
         self.local_broker.subscribe_to_topic(subject).await
     }
 
     async fn subscribe_to_queue(&self, topic: &str, group: &str) -> Result<QueueReceiver> {
         self.queue_handler
-            .send((topic.replace(".", "/").replace("*", "+"), group.to_string()))
+            .send((topic.replace('.', "/").replace('*', "+"), group.to_string()))
             .await?;
         self.local_broker.subscribe_to_queue(topic, group).await
     }

@@ -143,12 +143,9 @@ pub trait MessageBroker: Send + Sync {
             response_subject: Some(response_subject.clone()),
         };
 
-
         println!("Generated HTTP Request: {message:?}");
 
-        let result = self
-            .request(message)
-            .await?;
+        let result = self.request(message).await?;
 
         println!("Got Response: {result:?}");
 
