@@ -11,7 +11,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 - Named brokers - allowing multiple brokers of the same or different types in a single application
     - this is designed to support usecases such as separating the publishing of internal domain events & public events meant for others to consume
 - an HTTP gateway server for publishing messages to the broker, as well as some request/response support
-- a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker)
+- a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker), as well as bi-directional socket communication
 - Trigger a Spin component from a message on a subscribed channel
 - Publish messages from the Spin component - defaulting to the same broker & subject, but optionally setting other defaults or manually setting the broker & subject for each message
 - Run the HTTP gateway server independently of the main spin app (doesn't really work for the in memory broker, but works for others)
