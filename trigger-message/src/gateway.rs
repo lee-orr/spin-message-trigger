@@ -9,7 +9,8 @@ use axum::{
     routing::{any, get, post},
     Router,
 };
-use serde::Serialize;
+use futures::{SinkExt, StreamExt};
+use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use spin_message_types::{HttpRequest, OutputMessage};
@@ -38,6 +39,7 @@ pub async fn spawn_gateway(
         .route("/publish/*subject", post(publish))
         .route("/subscribe/*subject", get(subscribe))
         .route("/request/*path", any(request_handler))
+        .route("/ws", any(ws_handler))
         .with_state(Arc::new(GatewayState {
             broker,
             websockets,
@@ -83,7 +85,7 @@ async fn subscribe(
 
     if let Some(websockets) = websockets {
         ws.on_upgrade(move |socket| {
-            handle_websocket(socket, subject, state.broker.clone(), websockets)
+            handle_subscribe_websocket(socket, subject, state.broker.clone(), websockets)
         })
         .into_response()
     } else {
@@ -91,7 +93,7 @@ async fn subscribe(
     }
 }
 
-async fn handle_websocket(
+async fn handle_subscribe_websocket(
     mut socket: WebSocket,
     subject: String,
     broker: Arc<dyn MessageBroker>,
@@ -162,4 +164,135 @@ async fn request_handler(
     } else {
         (StatusCode::BAD_REQUEST, "request-response is not supported").into_response()
     }
+}
+
+async fn ws_handler(
+    State(state): State<Arc<GatewayState>>,
+    ws: WebSocketUpgrade,
+) -> impl IntoResponse {
+    println!("Setting up upgrade");
+    let websockets = state.websockets.clone();
+
+    if let Some(websockets) = websockets {
+        ws.on_upgrade(move |socket| {
+            handle_bidirectional_websocket(socket, state.broker.clone(), websockets)
+        })
+        .into_response()
+    } else {
+        (StatusCode::BAD_REQUEST, "Websockets aren't supported").into_response()
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum BidirectionalSocketMessage {
+    Subscribe(String),
+    Publish(OutputMessage),
+}
+
+async fn handle_bidirectional_websocket(
+    socket: WebSocket,
+    broker: Arc<dyn MessageBroker>,
+    websockets: configs::WebsocketConfig,
+) {
+    println!("upgraded");
+    let (mut sender, receiver) = socket.split();
+
+    let broker = broker.clone();
+    let (channel_send, mut channel_recv) = tokio::sync::mpsc::channel(10);
+    tokio::spawn(async move {
+        receive_websocket_messages(receiver, &broker, channel_send, websockets).await
+    });
+
+    while let Some(t) = channel_recv.recv().await {
+        let _ = sender.send(t).await;
+    }
+}
+
+async fn websocket_subscribe(
+    broker: Arc<dyn MessageBroker>,
+    subject: String,
+    websockets: configs::WebsocketConfig,
+    sender: tokio::sync::mpsc::Sender<WsMessage>,
+) {
+    if let Ok(mut result) = broker.subscribe_to_topic(&subject).await {
+        println!("subscribed to {subject}");
+        while let Ok(message) = result.recv().await {
+            println!("socket subscription message recieved");
+            match websockets {
+                configs::WebsocketConfig::BinaryBody => {
+                    let _ = sender.send(WsMessage::Binary(message.message)).await;
+                    println!("socket subscription message sent");
+                }
+                configs::WebsocketConfig::TextBody => {
+                    if let Ok(body) = std::str::from_utf8(&message.message) {
+                        let _ = sender.send(WsMessage::Text(body.to_string())).await;
+                        println!("socket subscription message sent");
+                    }
+                }
+                configs::WebsocketConfig::Messagepack => {
+                    let mut buf = Vec::new();
+                    if let Ok(()) = message.serialize(&mut rmp_serde::Serializer::new(&mut buf)) {
+                        let _ = sender.send(WsMessage::Binary(buf)).await;
+                        println!("socket subscription messagepack sent");
+                    }
+                }
+                configs::WebsocketConfig::Json => {
+                    if let Ok(json) = serde_json::to_string(&message) {
+                        let _ = sender.send(WsMessage::Text(json)).await;
+                        println!("socket subscription message json sent");
+                    }
+                }
+            }
+        }
+    }
+}
+
+async fn receive_websocket_messages(
+    mut receiver: futures::stream::SplitStream<WebSocket>,
+    broker: &Arc<dyn MessageBroker>,
+    sender: tokio::sync::mpsc::Sender<WsMessage>,
+    websocket: configs::WebsocketConfig,
+) {
+    loop {
+        println!("waiting for message");
+        match receiver.next().await {
+            Some(Ok(msg)) => {
+                println!("parsing...");
+                let Some(parsed) = (match msg {
+                    WsMessage::Text(text) => serde_json::from_str(&text).ok(),
+                    WsMessage::Binary(binary) => rmp_serde::from_slice(&binary).ok(),
+                    WsMessage::Close(reason) => {
+                        println!("Websocket closed {reason:?}");
+                        break;
+                    },
+                    _ => { continue; }
+                 }) else { println!("parse failed"); break; };
+
+                match parsed {
+                    BidirectionalSocketMessage::Subscribe(subject) => {
+                        let broker = broker.clone();
+                        let websocket = websocket.clone();
+                        let sender = sender.clone();
+                        tokio::spawn(async move {
+                            websocket_subscribe(broker, subject, websocket, sender).await;
+                        });
+                    }
+                    BidirectionalSocketMessage::Publish(message) => {
+                        println!("publishing to broker {message:?}");
+                        let _ = broker.publish(message).await;
+                    }
+                }
+            }
+            Some(Err(e)) => {
+                eprintln!("Error receiving socket {e:?}");
+                break;
+            }
+            None => {
+                eprintln!("Received nothing...");
+                break;
+            }
+        };
+        println!("looping back");
+    }
+    println!("exited");
 }
