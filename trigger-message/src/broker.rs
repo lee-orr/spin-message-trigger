@@ -136,14 +136,16 @@ pub trait MessageBroker: Send + Sync {
             bail!("Couldn't Serialize body");
         };
 
-        let result = self
-            .request(OutputMessage {
-                subject: Some(subject.clone()),
-                message: body,
-                broker: None,
-                response_subject: Some(response_subject.clone()),
-            })
-            .await?;
+        let message = OutputMessage {
+            subject: Some(subject.clone()),
+            message: body,
+            broker: None,
+            response_subject: Some(response_subject.clone()),
+        };
+
+        println!("Generated HTTP Request: {message:?}");
+
+        let result = self.request(message).await?;
 
         println!("Got Response: {result:?}");
 
