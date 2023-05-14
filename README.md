@@ -133,6 +133,21 @@ CredentialsFile = "/path/to/credentials/file"
 CredentialsString = "credentials string"
 ```
 
+#### MQTT Broker
+The MQTT broker provides support for MQTT compatible message brokers. Note that it traslates the topic patterns to be consistent with the other brokers - so segments of the topic will be represented with `.` rather than `/` and wildcards with `*` rather than `+`.
+For example, the MQTT topic `my/topic` would be translated into `my.topic`, and the subscription `my/+` would be `my.*`. 
+
+It's configuration involves setting the redis address, like so
+```toml
+[trigger.brokers.BROKER_NAME.broker_type.Mqtt]
+address = "mqtt://mqtt:1883"
+# Optionally, you can also provide a client id. Otherwise one will be generated.
+id = "my_id"
+# Optionally, you can also provide the keep_alive duration, as a f32 in seconds
+keep_alive = 5.0
+```
+
+
 ### Gateway Definition
 Each broker can have an HTTP gateway defined for accessing it. The gateways expose 3 routes, based on the config:
 - `/publish/*subject*` - an HTTP post to this route will send the body of the request to the subject in the route.

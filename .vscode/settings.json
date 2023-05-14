@@ -5,5 +5,6 @@
         {"label": "Clippy", "task": "Clippy + Fmt"},
         {"label": "Update", "task": "Update Plugin"},
         {"label": "Spin", "task": "Spin Up"},
+        {"label": "Gateway", "task": "Gateway"},
     ]
 }

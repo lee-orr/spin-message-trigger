@@ -75,6 +75,9 @@ impl TriggerExecutor for MessageTrigger {
                         BrokerTypeConfig::Nats(options) => Arc::new(
                             crate::nats_broker::NatsBroker::new(options.clone(), key.clone()),
                         ),
+                        BrokerTypeConfig::Mqtt(options) => Arc::new(
+                            crate::mqtt_broker::MqttBroker::new(options.clone(), key.clone()),
+                        ),
                     };
                     if let GatewayConfig::Http {
                         port,

@@ -16,5 +16,10 @@
 			"command": "spin build && spin up",
 			"label": "Spin Up"
 		},
+		{
+			"type": "shell",
+			"command": "cargo run --bin gateway -- --broker Mqtt[address]=\"mqtt://mqtt:1883\"",
+			"label": "Gateway"
+		}
 	]
 }

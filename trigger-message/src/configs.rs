@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::nats_broker::NatsConnectionInfo;
+use crate::{mqtt_broker::MqttConnectionInfo, nats_broker::NatsConnectionInfo};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct BrokerConfig {
@@ -16,6 +16,7 @@ pub enum BrokerTypeConfig {
     InMemoryBroker,
     Redis(String),
     Nats(NatsConnectionInfo),
+    Mqtt(MqttConnectionInfo),
 }
 
 impl FromStr for BrokerTypeConfig {
