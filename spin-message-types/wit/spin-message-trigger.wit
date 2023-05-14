@@ -21,6 +21,17 @@ default interface spin-message-types {
 
 default world spin-message-trigger {
     import spin-message-types: self.spin-message-types
+
+    import config: interface {
+        get-config: func(key: string) -> result<string, error>
+
+        variant error {
+            provider(string),
+            invalid-key(string),
+            invalid-schema(string),
+            other(string),
+        }
+    }
     
     export guest: interface {
         use self.spin-message-types.{internal-message, outcome}

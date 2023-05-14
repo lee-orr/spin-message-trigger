@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::{mpsc, oneshot};
 
-use crate::broker::{create_channel, MessageBroker, Receiver, Sender};
+use crate::broker::{create_channel, MessageBroker, Receiver, Sender, QueueReceiver};
 
 #[derive(Clone, Debug)]
 pub struct Subscription(Sender);
@@ -245,6 +245,10 @@ impl MessageBroker for NatsBroker {
                 .await?;
             Ok(sender.subscribe())
         }
+    }
+
+    async fn subscribe_to_queue(&self, topic: &str, group: &str) -> Result<QueueReceiver> {
+        todo!()
     }
 
     async fn request(&self, request: OutputMessage) -> Result<InputMessage> {

@@ -8,7 +8,9 @@ use spin_message_types::{HttpRequest, HttpResponse, InputMessage, OutputMessage}
 use crate::configs::{GatewayRequestResponseConfig, SubscriptionType};
 
 pub type Receiver = broadcast::Receiver<InputMessage>;
+pub type QueueReceiver = broadcast::Receiver<InputMessage>;
 pub type Sender = broadcast::Sender<InputMessage>;
+pub type QueueSender = broadcast::Sender<InputMessage>;
 
 pub fn create_channel(capacity: usize) -> Sender {
     let (sender, _) = broadcast::channel(capacity);
@@ -43,10 +45,7 @@ pub trait MessageBroker: Send + Sync {
         self.subscribe_to_topic(&sub).await
     }
 
-    async fn subscribe_to_queue(&self, topic: &str, group: &str) -> Result<Receiver> {
-        let sub = format!("queue.{topic}.::.{group}");
-        self.subscribe_to_topic(&sub).await
-    }
+    async fn subscribe_to_queue(&self, topic: &str, group: &str) -> Result<QueueReceiver>;
 
     async fn subscribe(&self, subscription: &SubscriptionType) -> Result<Receiver> {
         match subscription {
