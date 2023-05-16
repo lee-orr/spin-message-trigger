@@ -8,6 +8,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
     - a simple in memory broker (with * based wildcard support)
     - redis pubsub
     - NATS
+    - MQTT
 - Named brokers - allowing multiple brokers of the same or different types in a single application
     - this is designed to support usecases such as separating the publishing of internal domain events & public events meant for others to consume
 - an HTTP gateway server for publishing messages to the broker, as well as some request/response support
