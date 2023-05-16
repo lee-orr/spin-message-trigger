@@ -26,10 +26,17 @@ pub struct MqttBroker {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct MqttCredentials {
+    username: String,
+    password: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct MqttConnectionInfo {
     address: String,
     id: Option<String>,
     keep_alive: Option<f32>,
+    credentials: Option<MqttCredentials>,
 }
 
 impl MqttConnectionInfo {
@@ -41,6 +48,10 @@ impl MqttConnectionInfo {
         let url = format!("{}?client_id={id}", self.address);
         let mut options = MqttOptions::parse_url(url)?;
         options.set_keep_alive(Duration::from_secs_f32(self.keep_alive.unwrap_or(5.)));
+
+        if let Some(MqttCredentials { username, password }) = &self.credentials {
+            options.set_credentials(username, password);
+        }
 
         let (client, eventloop) = AsyncClient::new(options, 100);
 

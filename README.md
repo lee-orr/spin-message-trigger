@@ -145,6 +145,11 @@ address = "mqtt://mqtt:1883"
 id = "my_id"
 # Optionally, you can also provide the keep_alive duration, as a f32 in seconds
 keep_alive = 5.0
+
+# Optionally, you can also set up a username and password
+[trigger.brokers.BROKER_NAME.broker_type.Mqtt.credentials]
+username = "username"
+password = "password"
 ```
 
 
