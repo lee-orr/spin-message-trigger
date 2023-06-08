@@ -1,0 +1,13 @@
+[[component]]
+id = "{{project-name | kebab_case}}"
+source = "target/wasm32-wasi/release/{{project-name | snake_case}}.wasm"
+allowed_http_hosts = []
+[component.trigger]
+broker = "{{trigger-broker}}"
+[component.trigger.subscription.Request]
+path = "{{trigger-path}}"
+method = "{{trigger-method}}"
+[component.build]
+command = "cargo build --target wasm32-wasi --release -p {{project-name | kebab_case}}"
+workdir = "{{ output-path }}"
+watch = ["src/**/*.rs", "Cargo.toml"]
