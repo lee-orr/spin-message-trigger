@@ -1,0 +1,20 @@
+[package]
+name = "{{project-name | kebab_case}}"
+authors = ["{{authors}}"]
+description = "{{project-description}}"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1"
+bytes = "1"
+spin-sdk = { git = "https://github.com/fermyon/spin" }
+spin-message-types = { git = "https://github.com/lee-orr/spin-message-trigger", features = [
+    "import",
+], default-features = false }
+wit-bindgen = "0.6.0"

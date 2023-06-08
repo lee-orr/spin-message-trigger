@@ -1,0 +1,13 @@
+[[component]]
+id = "{{project-name | kebab_case}}"
+source = "{{ output-path }}/target/wasm32-wasi/release/{{project-name | snake_case}}.wasm"
+allowed_http_hosts = []
+[component.trigger]
+broker = "{{trigger-broker}}"
+[component.trigger.subscription.Topic]
+topic = "{{trigger-topic}}"
+result = { default_broker = "{{result-broker}}", default_subject = "{{result-topic}}" }
+[component.build]
+command = "cargo build --target wasm32-wasi --release -p {{project-name | kebab_case}}"
+workdir = "{{ output-path }}"
+watch = ["{{project-name | snake_case}}/src/**/*.rs", "Cargo.toml"]

@@ -1,0 +1,7 @@
+manifest_version = "1"
+id = "message-app"
+description = "Messaging based Spin app"
+tags = ["messaging", "rust"]
+
+[parameters]
+project-description = { type = "string", prompt = "Description", default = "" }

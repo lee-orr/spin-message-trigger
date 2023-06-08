@@ -1,0 +1,15 @@
+spin_manifest_version = "1"
+authors = ["{{authors}}"]
+description = "{{project-description}}"
+name = "{{project-name}}"
+version = "0.1.0"
+
+[trigger]
+type = "message"
+
+[trigger.brokers.primary]
+broker_type = "InMemoryBroker"
+
+[trigger.brokers.primary.gateway.Http]
+port = 3_005
+request_response = "Json"
