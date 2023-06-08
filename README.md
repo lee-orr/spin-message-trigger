@@ -1,6 +1,6 @@
 # Spin Message Trigger
 
-A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]. Note this is an experimental/work-in-progress repo, and is not production ready at this point. Also - if you have suggestions for improvements, feel free to make them in the Issues tab.
+A generiuc messaging trigger for [Fermyon Spin](https://github.com/fermyon/spin). Note this is an experimental/work-in-progress repo, and is not production ready at this point. Also - if you have suggestions for improvements, feel free to make them in the Issues tab.
 
 ## Features
 
@@ -8,10 +8,11 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
     - a simple in memory broker (with * based wildcard support)
     - redis pubsub
     - NATS
+    - MQTT
 - Named brokers - allowing multiple brokers of the same or different types in a single application
     - this is designed to support usecases such as separating the publishing of internal domain events & public events meant for others to consume
 - an HTTP gateway server for publishing messages to the broker, as well as some request/response support
-- a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker)
+- a WebSocket server allowing subscribing to single subjects (with wildcard support, as available for the broker), as well as bi-directional socket communication
 - Trigger a Spin component from a message on a subscribed channel
 - Publish messages from the Spin component - defaulting to the same broker & subject, but optionally setting other defaults or manually setting the broker & subject for each message
 - Run the HTTP gateway server independently of the main spin app (doesn't really work for the in memory broker, but works for others)
@@ -25,7 +26,7 @@ A generiuc messaging trigger for (Fermyon Spin)[https://github.com/fermyon/spin]
 ## Installation
 To install the plugin, run the following command on the system running your spin deployment (or any development machine):
 ```bash
-spin plugin install --url https://github.com/lee-orr/spin-message-trigger/releases/download/v0.0.6/trigger-message.json --yes
+spin plugin install --url https://github.com/lee-orr/spin-message-trigger/releases/download/canary/trigger-message.json --yes
 ```
 
 ## Usage
@@ -133,11 +134,32 @@ CredentialsFile = "/path/to/credentials/file"
 CredentialsString = "credentials string"
 ```
 
+#### MQTT Broker
+The MQTT broker provides support for MQTT compatible message brokers. Note that it traslates the topic patterns to be consistent with the other brokers - so segments of the topic will be represented with `.` rather than `/` and wildcards with `*` rather than `+`.
+For example, the MQTT topic `my/topic` would be translated into `my.topic`, and the subscription `my/+` would be `my.*`. 
+
+It's configuration involves setting the redis address, like so
+```toml
+[trigger.brokers.BROKER_NAME.broker_type.Mqtt]
+address = "mqtt://mqtt:1883"
+# Optionally, you can also provide a client id. Otherwise one will be generated.
+id = "my_id"
+# Optionally, you can also provide the keep_alive duration, as a f32 in seconds
+keep_alive = 5.0
+
+# Optionally, you can also set up a username and password
+[trigger.brokers.BROKER_NAME.broker_type.Mqtt.credentials]
+username = "username"
+password = "password"
+```
+
+
 ### Gateway Definition
 Each broker can have an HTTP gateway defined for accessing it. The gateways expose 3 routes, based on the config:
 - `/publish/*subject*` - an HTTP post to this route will send the body of the request to the subject in the route.
 - `/subscribe/*subject*` - this is a route for WebSocket's to subscribe for updates on the subject, with support for pattern matching as provided by the broker.
 - `/request/*path*` - this route will serialize any request sent to it into a message, publish it to a specifically formatted subject, and then recieve a response from the first published message on another specifically formatted subject.
+- `/ws` - this is a rout for supporting bi-directional, multi-subject websocket connections.
 
 If you wish to enable a gateway, you can define the gateway like so:
 ```toml
@@ -229,6 +251,42 @@ group = "queue"
 You can build the gateway independantly using `cargo build -b gateway` and run it uusing `cargo run -b gateway`. However, it cannot parse the gateway definitions from the spin toml, since it's built primarily for situations where you might host the gateway separately from the actual spin app.
 
 As such - you configure it via the cli arguments. To get the up-to-date arguments, run `cargo run --bin gateway -- -h`. It's important to note that the broker is parsed as a query string. As such - a redis broker might be: `cargo run --bin gateway -- --broker Redis=redis://redis:6379` while a nats broker might be: `cargo run --bin gateway -- --broker Nats[addresses][0]="nats"`. It defaults to port `3015`.
+
+## Bi-Directional Websockets
+Bi-directional websockets rely on a simple protocol, encoded in either Json or Msgpack (based on whether websocket subscriptions rely on binary or text).
+
+To subscribe to a topic, the client should send a message with the following structure:
+```typescript
+{
+    "Subscribe": "good.*" 
+}
+
+```
+
+The client will receive messages encoding the following structure:
+```typescript
+{
+    message: Array<u8>, // an array representing the contents of the message
+    subject: String, // the subject the message was published on
+    broker: String, // the name of the broker in the config file
+    response_subject: Option<String> // if it is a request/response, send the response to this subject
+}
+
+```
+
+The client can also publish messages with the following structure:
+```typescript
+{
+    "Publish": {
+        "message": Array<u8>,
+        "subject": "good.test",
+        "response_subject": Option<String>
+    }
+}
+
+```
+
+
 
 ## Development
 This repository is set up to function as either a Dev Container (using VsCode). This means you can use Github workspaces to get it set up automatically, or use VSCodes "Clone Repository into Volume" option to clone the repo & build the dev environment for you.

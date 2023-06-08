@@ -4,7 +4,7 @@ use spin_message_types::*;
 use std::str;
 
 #[json_http_component]
-fn handle_message(message: HttpRequest) -> HttpResponse {
+async fn handle_message(message: HttpRequest) -> HttpResponse {
     println!("Http Request: {message:?}");
     let Ok(body) =  str::from_utf8(&message.body) else {
         return HttpResponse {

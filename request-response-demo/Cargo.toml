@@ -17,4 +17,3 @@ bytes = "1"
 spin-sdk = { git = "https://github.com/fermyon/spin" }
 spin-message-types = { path = "../spin-message-types", features = ["import"], default-features=false }
 http = "0.2"
-

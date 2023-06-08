@@ -4,7 +4,7 @@ use spin_message_types::import::message_component;
 use spin_message_types::*;
 
 #[message_component]
-fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
+async fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
     println!("Message: {:?}", from_utf8(&message.message));
     let output: Vec<u8> = "Goodbye".bytes().collect();
     Ok(vec![OutputMessage {

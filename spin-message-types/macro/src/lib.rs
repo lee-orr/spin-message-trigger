@@ -16,7 +16,15 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
                 let response_subject = message.response_subject.clone();
 
-                let mut result = #func_name(message);
+                let Ok(runtime) = spin_message_types::runtime::runtime() else {
+                    return Result::<Vec<OutputMessage>, MessageError>::Err(MessageError("Couldn't generate runtime".to_string())).into();
+                };
+
+                let mut result = runtime.block_on(async {
+                    let mut result = #func_name(message);
+                    let output = result.await;
+                    output
+                });
 
                 println!("Responding with {:?}", response_subject);
 
@@ -62,11 +70,11 @@ pub fn json_http_component(_attr: TokenStream, item: TokenStream) -> TokenStream
         use spin_message_types::import::message_component;
 
         #[message_component]
-        fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
+        async fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
             #func
 
             if let Ok(http) = HttpRequest::from_json_message(&message) {
-                let result : HttpResponse = #func_name(http);
+                let result : HttpResponse = #func_name(http).await;
                 Ok(result.to_json_response())
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))
@@ -85,11 +93,11 @@ pub fn msgpack_http_component(_attr: TokenStream, item: TokenStream) -> TokenStr
         use spin_message_types::import::message_component;
 
         #[message_component]
-        fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
+        async fn handle_message(message: InputMessage) -> Result<Vec<OutputMessage>, MessageError> {
             #func
 
             if let Ok(http) = HttpRequest::from_msgpack_message(&message) {
-                let result : HttpResponse = #func_name(http);
+                let result : HttpResponse = #func_name(http).await;
                 Ok(result.to_msgpack_response())
             } else {
                 Err(MessageError("Couldn't parse http request".to_string()))

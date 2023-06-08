@@ -45,18 +45,21 @@ async fn main() -> Result<(), Error> {
 
     let broker_key: String = "BROKER".to_string();
 
-    let broker: Arc<dyn MessageBroker> = match broker {
-        BrokerTypeConfig::InMemoryBroker => Arc::new(
-            trigger_message::in_memory_broker::InMemoryBroker::new(broker_key.clone()),
-        ),
-        BrokerTypeConfig::Redis(address) => Arc::new(
-            trigger_message::redis_broker::RedisBroker::new(address, broker_key.clone()),
-        ),
-        BrokerTypeConfig::Nats(options) => Arc::new(trigger_message::nats_broker::NatsBroker::new(
-            options,
-            broker_key.clone(),
-        )),
-    };
+    let broker: Arc<dyn MessageBroker> =
+        match broker {
+            BrokerTypeConfig::InMemoryBroker => Arc::new(
+                trigger_message::in_memory_broker::InMemoryBroker::new(broker_key.clone()),
+            ),
+            BrokerTypeConfig::Redis(address) => Arc::new(
+                trigger_message::redis_broker::RedisBroker::new(address, broker_key.clone()),
+            ),
+            BrokerTypeConfig::Nats(options) => Arc::new(
+                trigger_message::nats_broker::NatsBroker::new(options, broker_key.clone()),
+            ),
+            BrokerTypeConfig::Mqtt(options) => Arc::new(
+                trigger_message::mqtt_broker::MqttBroker::new(options, broker_key.clone()),
+            ),
+        };
 
     spawn_gateway(port, websockets.clone(), broker, request_response, timeout).await;
 
