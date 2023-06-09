@@ -7,6 +7,7 @@ use crate::{mqtt_broker::MqttConnectionInfo, nats_broker::NatsConnectionInfo};
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct BrokerConfig {
     pub broker_type: BrokerTypeConfig,
+    #[serde(default)]
     pub gateway: GatewayConfig,
 }
 

@@ -79,7 +79,7 @@ broker_type = "InMemoryBroker"
 The Redis broker provides support for Redis channels, similar to the spin built-in redis trigger, but with additional support for wildcard subscriptions.
 It's configuration involves setting the redis address, like so
 ```toml
-[trigger.brokers.BROKER_NAME.broker_type]
+[trigger.brokers.BROKER_NAME]
 broker_type = { Redis = "redis://redis:6379" }
 ```
 

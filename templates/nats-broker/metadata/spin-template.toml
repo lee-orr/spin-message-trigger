@@ -1,0 +1,10 @@
+manifest_version = "1"
+id = "nats-broker"
+description = "Nats Message Broker for Spin Message Trigger"
+tags = ["messaging", "rust"]
+
+[add_component.snippets]
+component = "component.txt"
+
+[parameters]
+broker-url = { type = "string", prompt = "Broker Name", default = "nats" }
