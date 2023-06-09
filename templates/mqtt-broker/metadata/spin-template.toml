@@ -7,4 +7,4 @@ tags = ["messaging", "rust"]
 component = "component.txt"
 
 [parameters]
-broker-url = { type = "string", prompt = "Broker Name", default = "mqtt://mqtt:1883" }
+broker-url = { type = "string", prompt = "Broker Url", default = "mqtt://mqtt:1883" }

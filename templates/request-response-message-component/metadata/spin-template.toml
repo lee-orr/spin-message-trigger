@@ -9,6 +9,6 @@ component = "component.txt"
 
 [parameters]
 project-description = { type = "string", prompt = "Description", default = "" }
-trigger-broker = { type = "string", prompt = "triggering broker", default = "primary" }
-trigger-path = { type = "string", prompt = "triggering path", default = "hello/*" }
-trigger-method = { type = "string", prompt = "triggering HTTP method", default = "POST" }
+trigger-broker = { type = "string", prompt = "Triggering Broker", default = "primary" }
+trigger-path = { type = "string", prompt = "Triggering Path", default = "hello/*" }
+trigger-method = { type = "string", prompt = "Triggering HTTP Method", default = "POST" }
