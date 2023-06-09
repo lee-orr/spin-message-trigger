@@ -29,7 +29,34 @@ To install the plugin, run the following command on the system running your spin
 spin plugin install --url https://github.com/lee-orr/spin-message-trigger/releases/download/canary/trigger-message.json --yes
 ```
 
-## Usage
+## Quick Start
+Once you've installed the plugin, you can get started quickly installing the templates and using them:
+
+```bash
+spin templates install --git https://github.com/lee-orr/spin-message-trigger --upgrade
+```
+
+You can then set up a new project using:
+```bash
+spin new message-app
+```
+
+Once you have that, you can use `spin add` to set up components, brokers and gateways. Importantly **Components must be manually added to the Cargo.toml workspace** once they are created.
+The available templates are:
+| Template Name | Description |
+| --- | --- |
+| message-component | This creates a component that gets triggered by a subscription. |
+| request-response-message-component | This creates a component that gets triggered by a request-response message, with an HTTP method & path. |
+| queue-component | This creates a component that gets subscribes to a queue - meaning only one member of the queue group will get triggered for each message. Most useful if you have multiple instances of the spin application running. |
+|  |  |
+| redis-broker | This connects to a redis pub-sub on the provided server |
+| mqtt-broker |  This connects to an Mqtt server |
+| nats-broker |  This connects to a Nats server or cluster |
+|  |  |
+| broker-gateway | This sets up an Http gateway that publishes to one of the brokers in your project |
+
+
+## Detailed Usage
 When setting up a spin application with this trigger, there are 3 parts:
 - the spin application details, which are consistent with any other spin application
 - the trigger definition
