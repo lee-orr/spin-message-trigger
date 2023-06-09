@@ -9,7 +9,7 @@ component = "component.txt"
 
 [parameters]
 project-description = { type = "string", prompt = "Description", default = "" }
-trigger-broker = { type = "string", prompt = "triggering broker", default = "primary" }
-trigger-topic = { type = "string", prompt = "triggering broker", default = "hello.*" }
-result-broker = { type = "string", prompt = "triggering broker", default = "primary" }
-result-topic = { type = "string", prompt = "triggering broker", default = "goodbye" }
+trigger-broker = { type = "string", prompt = "Triggering Broker", default = "primary" }
+trigger-topic = { type = "string", prompt = "Subscription", default = "hello.*" }
+result-broker = { type = "string", prompt = "Default Result Broker", default = "primary" }
+result-topic = { type = "string", prompt = "Default Result Topic", default = "goodbye" }

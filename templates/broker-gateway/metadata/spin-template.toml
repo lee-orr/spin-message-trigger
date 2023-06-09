@@ -1,0 +1,11 @@
+manifest_version = "1"
+id = "broker-gateway"
+description = "HTTP Gateway for Spin Message Trigger Broker"
+tags = ["messaging", "rust"]
+
+[add_component.snippets]
+component = "component.txt"
+
+[parameters]
+broker-name = { type = "string", prompt = "Broker Name", default = "primary" }
+port = { type = "string", prompt = "Gateway Port", default = "3010" }
