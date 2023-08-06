@@ -14,10 +14,10 @@ async-trait = "0.1"
 clap = { version = "3.1.15", features = ["derive", "env"] }
 futures = "0.3.25"
 serde = "1.0"
-spin-core = { git = "https://github.com/fermyon/spin"}
-spin-app = { git = "https://github.com/fermyon/spin"}
+spin-core = { git = "https://github.com/fermyon/spin" }
+spin-app = { git = "https://github.com/fermyon/spin" }
 spin-trigger = { git = "https://github.com/fermyon/spin" }
-tokio = { version = "1.11", features = [ "full" ] }
+tokio = { version = "1.11", features = ["full"] }
 tokio-scoped = "0.2.0"
 dashmap = "5"
 axum = { version = "0.6", features = ["ws"] }
@@ -25,9 +25,9 @@ spin-message-types = { path = "../spin-message-types", features = ["export"] }
 serde_json = "*"
 rmp-serde = "*"
 wildmatch = "2"
-redis = { version = "0.23", features = [ "tokio-comp", "aio" ] }
-async-nats = "0.29"
-nkeys = "0.2"
+redis = { version = "0.23", features = ["tokio-comp", "aio"] }
+async-nats = "0.31"
+nkeys = "0.3"
 ulid = "1"
 serde_qs = "*"
 http = "0.2"
