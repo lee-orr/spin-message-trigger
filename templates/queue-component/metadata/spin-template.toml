@@ -1,0 +1,16 @@
+manifest_version = "1"
+id = "queue-component"
+description = "Queue Component using Rust"
+tags = ["messaging", "rust"]
+
+
+[add_component.snippets]
+component = "component.txt"
+
+[parameters]
+project-description = { type = "string", prompt = "Description", default = "" }
+trigger-broker = { type = "string", prompt = "Triggering Broker", default = "primary" }
+trigger-topic = { type = "string", prompt = "Triggering Subscription", default = "my.topic" }
+trigger-group = { type = "string", prompt = "Triggering Queue Group", default = "queue_group" }
+result-broker = { type = "string", prompt = "Default Result Broker", default = "primary" }
+result-topic = { type = "string", prompt = "Default Result Topic", default = "goodbye" }

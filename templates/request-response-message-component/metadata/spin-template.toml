@@ -1,0 +1,14 @@
+manifest_version = "1"
+id = "request-response-message-component"
+description = "Request Response Messaging Component using Rust"
+tags = ["messaging", "rust"]
+
+
+[add_component.snippets]
+component = "component.txt"
+
+[parameters]
+project-description = { type = "string", prompt = "Description", default = "" }
+trigger-broker = { type = "string", prompt = "Triggering Broker", default = "primary" }
+trigger-path = { type = "string", prompt = "Triggering Path", default = "hello/*" }
+trigger-method = { type = "string", prompt = "Triggering HTTP Method", default = "POST" }

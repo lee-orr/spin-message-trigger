@@ -1,0 +1,2 @@
+[trigger.brokers.{{project-name | kebab_case}}.broker_type.NATs]
+addresses = ["{broker-url}"]

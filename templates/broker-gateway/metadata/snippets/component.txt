@@ -1,0 +1,5 @@
+# Gateway: {{project-name}}
+[trigger.brokers.{{broker-name | kebab_case}}.gateway.Http]
+port = {{port}}
+websockets = "Json"
+request_response = "Json"

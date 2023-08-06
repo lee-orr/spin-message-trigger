@@ -7,6 +7,9 @@ version = "0.1.0"
 name = "message_macro"
 proc-macro = true
 
+[features]
+default = []
+
 [dependencies]
 anyhow = "1"
 bytes = "1"
