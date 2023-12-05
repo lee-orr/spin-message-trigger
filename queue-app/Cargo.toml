@@ -19,4 +19,3 @@ spin-message-types = { path = "../spin-message-types", features = ["import"], de
 wit-bindgen = "0.15.0"
 
 
-linkme = { workspace = true }

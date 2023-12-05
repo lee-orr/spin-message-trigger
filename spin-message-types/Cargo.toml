@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
+default = ["import", "export"]
 export = ["dep:wasmtime"]
 import = ["dep:message-macro", "dep:wit-bindgen", "dep:wit-bindgen-rust"]
 
@@ -20,4 +20,3 @@ wasmtime = { version = "15.0.0", features = ["component-model"], optional = true
 wit-bindgen = { version = "0.15", optional = true }
 wit-bindgen-rust = { version = "0.15", optional = true }
 tokio = { workspace = true, features = ["rt"]}
-linkme = { workspace = true }

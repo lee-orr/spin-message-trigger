@@ -25,4 +25,3 @@ spin-core = { git = "https://github.com/fermyon/spin"}
 spin-app = { git = "https://github.com/fermyon/spin"}
 spin-trigger = { git = "https://github.com/fermyon/spin"}
 spin-sdk = { git = "https://github.com/fermyon/spin"}
-linkme = "0.3"

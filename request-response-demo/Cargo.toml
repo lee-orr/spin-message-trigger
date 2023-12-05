@@ -17,5 +17,4 @@ bytes  = { workspace = true }
 spin-sdk = { workspace = true }
 spin-message-types = { path = "../spin-message-types", features = ["import"], default-features=false }
 http = { workspace = true }
-
-linkme = { workspace = true }
+wit-bindgen = "0.15.0"

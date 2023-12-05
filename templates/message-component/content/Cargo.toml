@@ -19,4 +19,3 @@ spin-message-types = { git = "https://github.com/lee-orr/spin-message-trigger", 
 ], default-features = false }
 wit-bindgen = "0.15.0"
 
-linkme = "0.3"

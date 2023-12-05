@@ -2,13 +2,14 @@ use crate::{InputMessage, OutputMessage};
 
 mod inner {
 wasmtime::component::bindgen!({
-    path: "wit/spin-message-trigger.wit",
-    async: true
+    path: "wit",
+    async: true,
+    world: "spin-message-trigger-guest",
 });
 }
 
-pub use self::inner::leeorr::spin_message_trigger::spin_message_types::{ InternalMessage, Outcome, InternalOutputMessage};
-pub use self::inner::SpinMessageTrigger;
+pub use self::inner::leeorr::spin_message_trigger::spin_message_types::{InternalMessage, Outcome, InternalOutputMessage};
+pub use self::inner::SpinMessageTriggerGuest;
 
 impl From<InternalOutputMessage> for OutputMessage {
     fn from(value: InternalOutputMessage) -> Self {

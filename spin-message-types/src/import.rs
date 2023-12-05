@@ -2,31 +2,13 @@ pub use message_macro::*;
 pub use wit_bindgen_rust::*;
 
 wit_bindgen::generate!({
-    path: "wit/spin-message-trigger.wit",
-    world: "spin-message-trigger",
-    exports: { "guest": EntryPoint }
+    path: "wit",
+    world: "spin-message-trigger"
 });
 
 pub use config::{get_config, Error};
-pub use self::exports::guest::*;
-pub use self::leeorr::spin_message_trigger::spin_message_types::InternalOutputMessage;
-use linkme::distributed_slice;
-pub use linkme;
-
-
-#[distributed_slice]
-pub static HANDLE_MESSAGE: [fn(InternalMessage) -> Outcome];
-
-pub struct EntryPoint;
-
-impl crate::import::exports::guest::Guest for EntryPoint {
-    fn handle_message(message:InternalMessage,) -> Outcome {
-        match HANDLE_MESSAGE.first() {
-            Some(f) => f(message),
-            None => Outcome::Error("No Message Handler Defined".to_string()),
-        }
-    }
-}
+pub use self::leeorr::spin_message_trigger::spin_message_types::{InternalOutputMessage, InternalMessage, Outcome };
+pub use self::leeorr::spin_message_trigger::spin_message_types as spin_message_types;
 
 
 impl From<crate::InputMessage> for InternalMessage {
