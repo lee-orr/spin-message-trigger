@@ -23,17 +23,6 @@ interface spin-message-types {
 
 world spin-message-trigger {
     use spin-message-types.{internal-message, internal-output-message, outcome};
-
-    import config: interface {
-        get-config: func(key: string) -> result<string, error>;
-
-        variant error {
-            provider(string),
-            invalid-key(string),
-            invalid-schema(string),
-            other(string),
-        }
-    }
 }
 
 world spin-message-trigger-guest {

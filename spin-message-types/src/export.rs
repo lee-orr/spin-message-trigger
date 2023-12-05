@@ -2,7 +2,7 @@ use crate::{InputMessage, OutputMessage};
 
 mod inner {
 wasmtime::component::bindgen!({
-    path: "wit",
+    path: "wit-message",
     async: true,
     world: "spin-message-trigger-guest",
 });

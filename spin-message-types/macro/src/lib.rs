@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-const INLINE_WIT : &'static str = include_str!("../../wit/spin-message-trigger.wit");
+const INLINE_WIT : &'static str = include_str!("../../wit-message/spin-message-trigger.wit");
 
 #[proc_macro_attribute]
 pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
