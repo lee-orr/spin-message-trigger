@@ -20,7 +20,6 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"bungcip.better-toml",
 				"panicbit.cargo",
 				"serayuzgur.crates",
 				"JScearcy.rust-doc-viewer",
@@ -30,7 +29,8 @@
 				"Odiriuss.rust-macro-expand",
 				"mohamed-nouri.websocket-client",
 				"github.vscode-github-actions",
-				"spencerwmiles.vscode-task-buttons"
+				"spencerwmiles.vscode-task-buttons",
+				"tamasfe.even-better-toml"
 			]
 		}
 	}
