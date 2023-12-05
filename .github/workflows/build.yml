@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: write
+concurrency:
+  group: build
+  cancel-in-progress: true
 
 env:
   PROGRAM_NAME: trigger-message
