@@ -29,7 +29,7 @@ jobs:
           - { target: "x86_64-unknown-linux-gnu", os: "ubuntu-latest", arch: "amd64", extension: "" }
           - { target: "x86_64-apple-darwin", os: "macos-latest", arch: "amd64", extension: "" }
           - { target: "aarch64-apple-darwin", os: "macos-latest", arch: "aarch64", extension: "" }
-          - { target: "x86_64-pc-windows-msvc", os: "windows-latest", arch: "amd64", extension: ".exe" }
+          - { target: "x86_64-pc-windows-gnu", os: "ubuntu-latest", arch: "amd64", extension: ".exe" }
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
@@ -46,10 +46,15 @@ jobs:
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libssl-dev:arm64
           echo '[target.aarch64-unknown-linux-gnu]' >> ${HOME}/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ${HOME}/.cargo/config.toml
+      - name: Setup Mingw for windows gnu
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt update
+          sudo apt install mingw-w64
       - name: Install Spin
         uses: rajatjindal/setup-actions/spin@main
         with:
-          version: "v0.10.1"
+          version: "v2.0.1"
       - name: Install pluginify
         shell: bash
         run: spin plugins install --url https://github.com/itowlson/spin-pluginify/releases/download/canary/pluginify.json --yes
@@ -74,7 +79,7 @@ jobs:
         uses: bluwy/substitute-string-action@v2.0.1
         with:
           _input-file: ./spin-pluginify.toml
-          "0.0.1": ${{ env.RELEASE_VERSION }}
+          "0.1.0": ${{ env.RELEASE_VERSION }}
           
       - name: Build plugin binary
         run: cargo build --release --target ${{ matrix.config.target }} -p ${{ env.PROGRAM_NAME}}
@@ -100,7 +105,7 @@ jobs:
       - name: Install Spin
         uses: rajatjindal/setup-actions/spin@main
         with:
-          version: "v0.10.1"
+          version: "v2.0.1"
       - name: Install pluginify
         shell: bash
         run: spin plugins install --url https://github.com/itowlson/spin-pluginify/releases/download/canary/pluginify.json --yes
