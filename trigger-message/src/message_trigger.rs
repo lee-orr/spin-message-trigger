@@ -185,17 +185,17 @@ impl MessageTrigger {
         let original_subject = &message.subject;
 
         let message = InternalMessage {
-            subject: &message.subject,
-            message: &message.message,
-            broker: &config.broker,
-            response_subject: message.response_subject.as_deref(),
+            subject: message.subject.clone(),
+            message: message.message,
+            broker: config.broker.clone(),
+            response_subject: message.response_subject,
         };
 
         println!("ready for wasm");
 
         let result = instance
             .guest()
-            .call_handle_message(&mut store, message)
+            .call_handle_message(&mut store, &message)
             .await?;
 
         println!("Got result {result:?}");

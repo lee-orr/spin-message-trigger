@@ -9,28 +9,28 @@ path = "bin/gateway.rs"
 
 
 [dependencies]
-anyhow = "1.0.68"
+anyhow = { workspace = true }
 async-trait = "0.1"
-clap = { version = "3.1.15", features = ["derive", "env"] }
-futures = "0.3.25"
-serde = "1.0"
-spin-core = { git = "https://github.com/fermyon/spin" }
-spin-app = { git = "https://github.com/fermyon/spin" }
-spin-trigger = { git = "https://github.com/fermyon/spin" }
-tokio = { version = "1.11", features = ["full"] }
-tokio-scoped = "0.2.0"
+clap = { version = "3", features = ["derive", "env"] } # TODO: update to 4 once spin updates
+futures = "0.3"
+serde = { workspace = true }
+spin-core = { workspace = true }
+spin-app = { workspace = true }
+spin-trigger = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-scoped = "0.2"
 dashmap = "5"
-axum = { version = "0.6", features = ["ws"] }
+axum = { version = "0.6", features = ["ws"] } # TODO: Update to 0.7 once wasmtime-wasi-http updates http-body from 1.0.0-rc.2 to 1
 spin-message-types = { path = "../spin-message-types", features = ["export"] }
-serde_json = "*"
-rmp-serde = "*"
+serde_json = { workspace = true }
+rmp-serde = { workspace = true }
 wildmatch = "2"
 redis = { version = "0.23", features = ["tokio-comp", "aio"] }
-async-nats = "0.31"
-nkeys = "0.3"
+async-nats = "0.33"
+nkeys = "0.4"
 ulid = "1"
-serde_qs = "*"
-http = "0.2"
+serde_qs = "0.12"
+http = { workspace = true }
 crossbeam-queue = "0.3"
-rsmq_async = "*"
-rumqttc = { version = "0.21", features = ["url"] }
+rsmq_async = "8"
+rumqttc = { version = "0.23", features = ["url"] }

@@ -69,7 +69,7 @@ impl NatsConnectionInfo {
                     })
                 }
                 NatsAuth::CredentialsFile(creds) => {
-                    ConnectOptions::with_credentials_file(creds.into()).await?
+                    ConnectOptions::with_credentials_file(creds).await?
                 }
                 NatsAuth::CredentialsString(creds) => ConnectOptions::with_credentials(creds)?,
             }
@@ -184,9 +184,9 @@ impl NatsBroker {
 
                             let _ = response.send(InputMessage {
                                 message: body,
-                                subject: subject.clone(),
+                                subject: subject.to_string(),
                                 broker: name.clone(),
-                                response_subject: msg.reply,
+                                response_subject: msg.reply.map(|v| v.to_string()),
                             });
                         }
                         Err(e) => {
@@ -214,9 +214,9 @@ impl NatsBroker {
                                 let body = msg.payload.to_vec();
                                 let _ = sender.send(InputMessage {
                                     message: body,
-                                    subject: subject.clone(),
+                                    subject: subject.to_string(),
                                     broker: name.clone(),
-                                    response_subject: msg.reply,
+                                    response_subject: msg.reply.map(|v| v.to_string()),
                                 });
                             }
                         }
@@ -237,9 +237,9 @@ impl NatsBroker {
                         let body = msg.payload.to_vec();
                         let _ = sender.send(InputMessage {
                             message: body,
-                            subject: subject.clone(),
+                            subject: subject.to_string(),
                             broker: name.clone(),
-                            response_subject: msg.reply,
+                            response_subject: msg.reply.map(|v| v.to_string()),
                         });
                     }
                 }

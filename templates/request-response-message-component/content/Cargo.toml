@@ -17,6 +17,8 @@ spin-sdk = { git = "https://github.com/fermyon/spin" }
 spin-message-types = { git = "https://github.com/lee-orr/spin-message-trigger", features = [
     "import",
 ], default-features = false }
-wit-bindgen = "0.6.0"
+wit-bindgen = "0.15.0"
 
-http = "0.2"
+http = "1"
+
+linkme = "0.3"

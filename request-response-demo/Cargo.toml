@@ -10,10 +10,12 @@ crate-type = [ "cdylib" ]
 
 [dependencies]
 # Useful crate to handle errors.
-anyhow = "1"
+anyhow = { workspace = true }
 # Crate to simplify working with bytes.
-bytes = "1"
+bytes  = { workspace = true }
 # The Spin SDK.
-spin-sdk = { git = "https://github.com/fermyon/spin" }
+spin-sdk = { workspace = true }
 spin-message-types = { path = "../spin-message-types", features = ["import"], default-features=false }
-http = "0.2"
+http = { workspace = true }
+
+linkme = { workspace = true }

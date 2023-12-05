@@ -7,12 +7,19 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func_name = &func.sig.ident;
 
     quote!(
-        struct Messages;
+        
+        #func
 
-        impl spin_message_types::import::guest::Guest for Messages {
-            fn handle_message(message: spin_message_types::import::spin_message_types::InternalMessage) -> spin_message_types::import::spin_message_types::Outcome {
+        mod inner_handle {
+            use super::*;
+            use spin_message_types::import::linkme::distributed_slice;
+        extern crate linkme;
+
+        #[distributed_slice(spin_message_types::import::HANDLE_MESSAGE)]
+        pub static HANDLE_MESSAGE_STATIC_FN: fn(spin_message_types::import::InternalMessage) -> spin_message_types::import::Outcome = handle_message_generated_fn;
+        
+        fn handle_message_generated_fn(message: spin_message_types::import::InternalMessage) -> spin_message_types::import::Outcome  {
                 let message : spin_message_types::InputMessage = message.into();
-                #func
 
                 let response_subject = message.response_subject.clone();
 
@@ -40,23 +47,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
                 result.into()
             }
-        }
-
-        const _: () = {
-            #[doc(hidden)]
-            #[export_name = "guest#handle-message"]
-            #[allow(non_snake_case)]
-            unsafe extern "C" fn __export_guest_handle_message(arg0: i32,arg1: i32,arg2: i32,arg3: i32,arg4: i32,arg5: i32, arg6: i32, arg7: i32, arg8: i32) -> i32 {
-                spin_message_types::import::guest::call_handle_message::<Messages>(arg0,arg1,arg2,arg3,arg4,arg5,arg6, arg7, arg8)
-            }
-
-            #[doc(hidden)]
-            #[export_name = "cabi_post_guest#handle-message"]
-            #[allow(non_snake_case)]
-            unsafe extern "C" fn __post_return_guest_handle_message(arg0: i32,) {
-                spin_message_types::import::guest::post_return_handle_message::<Messages>(arg0,)
-            }
-        };
+        }    
     )
     .into()
 }

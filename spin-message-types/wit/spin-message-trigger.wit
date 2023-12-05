@@ -1,4 +1,6 @@
-default interface spin-message-types {
+package leeorr:spin-message-trigger@0.2.0;
+
+interface spin-message-types {
     record internal-message {
         message: list<u8>,
         subject: string,
@@ -19,11 +21,12 @@ default interface spin-message-types {
     }
 }
 
-default world spin-message-trigger {
-    import spin-message-types: self.spin-message-types
+world spin-message-trigger {
+    use spin-message-types.{internal-message, internal-output-message, outcome};
+    
 
     import config: interface {
-        get-config: func(key: string) -> result<string, error>
+        get-config: func(key: string) -> result<string, error>;
 
         variant error {
             provider(string),
@@ -34,7 +37,7 @@ default world spin-message-trigger {
     }
     
     export guest: interface {
-        use self.spin-message-types.{internal-message, outcome}
-        handle-message: func(message: internal-message) -> outcome
+        use spin-message-types.{internal-message, internal-output-message, outcome};
+        handle-message: func(message: internal-message) -> outcome;
     }
 }

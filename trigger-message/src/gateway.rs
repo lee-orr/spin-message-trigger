@@ -13,7 +13,7 @@ use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use spin_message_types::{HttpRequest, OutputMessage};
+use spin_message_types::{HttpRequest, OutputMessage, HttpResponse};
 
 use crate::{
     broker::MessageBroker,
@@ -133,6 +133,43 @@ async fn handle_subscribe_websocket(
     }
 }
 
+fn axum_to_http(method: axum::http::Method, headers: axum::http::HeaderMap, uri: axum::http::Uri, path: String, bytes: Bytes) -> anyhow::Result<HttpRequest> {
+    let mut headers_iter = headers.into_iter().map(|(n,v)| (n.and_then(|n| str::parse::<http::HeaderName>(&n.to_string()).ok()), http::HeaderValue::from_bytes(v.as_bytes()))).filter_map(|(n, v)| match v {
+        Ok(v) => Some((n,v)),
+        Err(_) => None,
+    });
+
+    let mut headers = http::HeaderMap::new();
+
+    headers.extend(headers_iter);
+
+    let request = HttpRequest {
+        method: str::parse(&method.to_string())?,
+        headers,
+        uri: str::parse(&uri.to_string())?,
+        path: path.clone(),
+        body: bytes.to_vec(),
+    };
+    Ok(request)
+}
+
+
+
+fn http_to_axum(code: http::StatusCode, headers: http::HeaderMap,body: Vec<u8>) -> anyhow::Result<Response<BoxBody>> {
+    let mut headers_iter = headers.into_iter().map(|(n,v)| (n.and_then(|n| str::parse::<axum::http::HeaderName>(&n.to_string()).ok()), axum::http::HeaderValue::from_bytes(v.as_bytes()))).filter_map(|(n, v)| match v {
+        Ok(v) => Some((n,v)),
+        Err(_) => None,
+    });
+
+    let mut headers = axum::http::HeaderMap::new();
+
+    headers.extend(headers_iter);
+
+    let response = (StatusCode::from_u16(code.as_u16())?, headers, body).into_response();
+
+    Ok(response)
+}
+
 async fn request_handler(
     Path(path): Path<String>,
     State(state): State<Arc<GatewayState>>,
@@ -146,17 +183,16 @@ async fn request_handler(
         let timeout = state.timeout.unwrap_or(2000);
         let timeout = Duration::from_millis(timeout);
 
-        let request = HttpRequest {
-            method: method.clone(),
-            headers: headers.clone(),
-            uri: uri.clone(),
-            path: path.clone(),
-            body: bytes.to_vec(),
+        let Ok(request) = axum_to_http(method, headers, uri, path, bytes) else {
+            return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
         };
         match tokio::time::timeout(timeout, broker.http_request(request, serializer)).await {
             Ok(Ok(result)) => {
                 println!("Got Parsed Response: {result:?}");
-                (result.status, result.headers, result.body).into_response()
+                match http_to_axum(result.status, result.headers, result.body) {
+                    Ok(r) => r,
+                    Err(_) => (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+                }
             }
             Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
             _ => (StatusCode::GATEWAY_TIMEOUT, "response timed out").into_response(),

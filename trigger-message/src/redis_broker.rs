@@ -69,12 +69,9 @@ impl RedisBroker {
                             Err(e) => eprintln!("Failed to publish - {e:?}"),
                         }
                         let mut rsmq = Rsmq::new_with_connection(
-                            RsmqOptions {
-                                ns: subject.clone(),
-                                realtime: true,
-                                ..Default::default()
-                            },
                             connection,
+                            true,
+                            Some(&subject)
                         );
                         let Ok(queues) = rsmq.list_queues().await else { continue };
                         for qname in queues.iter() {
@@ -129,12 +126,9 @@ impl RedisBroker {
                     return;
                 };
                 let mut rsmq = Rsmq::new_with_connection(
-                    RsmqOptions {
-                        ns: subject.clone(),
-                        realtime: true,
-                        ..Default::default()
-                    },
                     connection,
+                    true,
+                    Some(&subject)
                 );
                 match rsmq.create_queue(&group, None, None, None).await {
                     Ok(_) => {}
