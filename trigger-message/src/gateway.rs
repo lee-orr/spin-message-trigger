@@ -13,7 +13,7 @@ use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use spin_message_types::{HttpRequest, OutputMessage, HttpResponse};
+use spin_message_types::{HttpRequest, OutputMessage};
 
 use crate::{
     broker::MessageBroker,
@@ -133,18 +133,32 @@ async fn handle_subscribe_websocket(
     }
 }
 
-fn axum_to_http(method: axum::http::Method, headers: axum::http::HeaderMap, uri: axum::http::Uri, path: String, bytes: Bytes) -> anyhow::Result<HttpRequest> {
-    let mut headers_iter = headers.into_iter().map(|(n,v)| (n.and_then(|n| str::parse::<http::HeaderName>(&n.to_string()).ok()), http::HeaderValue::from_bytes(v.as_bytes()))).filter_map(|(n, v)| match v {
-        Ok(v) => Some((n,v)),
-        Err(_) => None,
-    });
+fn axum_to_http(
+    method: axum::http::Method,
+    headers: axum::http::HeaderMap,
+    uri: axum::http::Uri,
+    path: String,
+    bytes: Bytes,
+) -> anyhow::Result<HttpRequest> {
+    let headers_iter = headers
+        .into_iter()
+        .map(|(n, v)| {
+            (
+                n.and_then(|n| str::parse::<http::HeaderName>(n.as_ref()).ok()),
+                http::HeaderValue::from_bytes(v.as_bytes()),
+            )
+        })
+        .filter_map(|(n, v)| match v {
+            Ok(v) => Some((n, v)),
+            Err(_) => None,
+        });
 
     let mut headers = http::HeaderMap::new();
 
     headers.extend(headers_iter);
 
     let request = HttpRequest {
-        method: str::parse(&method.to_string())?,
+        method: str::parse(method.as_ref())?,
         headers,
         uri: str::parse(&uri.to_string())?,
         path: path.clone(),
@@ -153,13 +167,23 @@ fn axum_to_http(method: axum::http::Method, headers: axum::http::HeaderMap, uri:
     Ok(request)
 }
 
-
-
-fn http_to_axum(code: http::StatusCode, headers: http::HeaderMap,body: Vec<u8>) -> anyhow::Result<Response<BoxBody>> {
-    let mut headers_iter = headers.into_iter().map(|(n,v)| (n.and_then(|n| str::parse::<axum::http::HeaderName>(&n.to_string()).ok()), axum::http::HeaderValue::from_bytes(v.as_bytes()))).filter_map(|(n, v)| match v {
-        Ok(v) => Some((n,v)),
-        Err(_) => None,
-    });
+fn http_to_axum(
+    code: http::StatusCode,
+    headers: http::HeaderMap,
+    body: Vec<u8>,
+) -> anyhow::Result<Response<BoxBody>> {
+    let headers_iter = headers
+        .into_iter()
+        .map(|(n, v)| {
+            (
+                n.and_then(|n| str::parse::<axum::http::HeaderName>(n.as_ref()).ok()),
+                axum::http::HeaderValue::from_bytes(v.as_bytes()),
+            )
+        })
+        .filter_map(|(n, v)| match v {
+            Ok(v) => Some((n, v)),
+            Err(_) => None,
+        });
 
     let mut headers = axum::http::HeaderMap::new();
 
@@ -297,9 +321,14 @@ async fn receive_websocket_messages(
                     WsMessage::Close(reason) => {
                         println!("Websocket closed {reason:?}");
                         break;
-                    },
-                    _ => { continue; }
-                 }) else { println!("parse failed"); break; };
+                    }
+                    _ => {
+                        continue;
+                    }
+                }) else {
+                    println!("parse failed");
+                    break;
+                };
 
                 match parsed {
                     BidirectionalSocketMessage::Subscribe(subject) => {

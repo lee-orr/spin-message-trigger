@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-const INLINE_WIT : &'static str = include_str!("../../wit-message/spin-message-trigger.wit");
+const INLINE_WIT: &str = include_str!("../../wit-message/spin-message-trigger.wit");
 
 #[proc_macro_attribute]
 pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -9,7 +9,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func_name = &func.sig.ident;
 
     quote!(
-        
+
         #func
 
         mod inner_handle {
@@ -56,7 +56,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
-        
+
         impl From<InternalOutputMessage> for spin_message_types::OutputMessage {
             fn from(value: InternalOutputMessage) -> Self {
                 Self {
@@ -67,7 +67,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
-        
+
         impl From<Result<Vec<spin_message_types::OutputMessage>, spin_message_types::MessageError>> for Outcome {
             fn from(value: Result<Vec<spin_message_types::OutputMessage>, spin_message_types::MessageError>) -> Self {
                 match value {
@@ -111,7 +111,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
                 result.into()
             }
-        }    
+        }
     }
     )
     .into()

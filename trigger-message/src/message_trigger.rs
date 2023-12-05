@@ -179,7 +179,8 @@ impl MessageTrigger {
             unreachable!()
         };
         println!("Setup instance");
-        let instance = spin_message_types::export::SpinMessageTriggerGuest::new(&mut store, &instance)?;
+        let instance =
+            spin_message_types::export::SpinMessageTriggerGuest::new(&mut store, &instance)?;
         println!("engine ready");
 
         let original_subject = &message.subject;

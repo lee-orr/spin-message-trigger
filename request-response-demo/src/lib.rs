@@ -6,7 +6,7 @@ use std::str;
 #[json_http_component]
 async fn handle_message(message: HttpRequest) -> HttpResponse {
     println!("Http Request: {message:?}");
-    let Ok(body) =  str::from_utf8(&message.body) else {
+    let Ok(body) = str::from_utf8(&message.body) else {
         return HttpResponse {
             headers: Default::default(),
             status: StatusCode::BAD_REQUEST,

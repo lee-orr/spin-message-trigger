@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dashmap::DashMap;
 use futures::StreamExt;
-use rsmq_async::{Rsmq, RsmqConnection, RsmqOptions};
+use rsmq_async::{Rsmq, RsmqConnection};
 use spin_message_types::{InputMessage, OutputMessage};
 use tokio::sync::mpsc;
 
@@ -68,12 +68,10 @@ impl RedisBroker {
                             Ok(_) => println!("Published to {subject}"),
                             Err(e) => eprintln!("Failed to publish - {e:?}"),
                         }
-                        let mut rsmq = Rsmq::new_with_connection(
-                            connection,
-                            true,
-                            Some(&subject)
-                        );
-                        let Ok(queues) = rsmq.list_queues().await else { continue };
+                        let mut rsmq = Rsmq::new_with_connection(connection, true, Some(&subject));
+                        let Ok(queues) = rsmq.list_queues().await else {
+                            continue;
+                        };
                         for qname in queues.iter() {
                             let result = rsmq.send_message(qname, body.clone(), None).await;
                             match result {
@@ -125,11 +123,7 @@ impl RedisBroker {
                     eprintln!("Couldn't get redis connectio - for queue n");
                     return;
                 };
-                let mut rsmq = Rsmq::new_with_connection(
-                    connection,
-                    true,
-                    Some(&subject)
-                );
+                let mut rsmq = Rsmq::new_with_connection(connection, true, Some(&subject));
                 match rsmq.create_queue(&group, None, None, None).await {
                     Ok(_) => {}
                     Err(e) => {

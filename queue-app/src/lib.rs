@@ -1,6 +1,6 @@
 use std::str::from_utf8;
 
-use spin_message_types::import::{spin::variables, message_component};
+use spin_message_types::import::{message_component, spin::variables};
 use spin_message_types::*;
 
 #[message_component]
