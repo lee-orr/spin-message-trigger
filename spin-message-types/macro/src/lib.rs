@@ -34,7 +34,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
-        
+
         impl From<InternalMessage> for spin_message_types::InputMessage {
             fn from(value: InternalMessage) -> Self {
                 Self {
@@ -45,7 +45,7 @@ pub fn message_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
-        
+
         impl From<spin_message_types::OutputMessage> for InternalOutputMessage {
             fn from(value: spin_message_types::OutputMessage) -> Self {
                 Self {
