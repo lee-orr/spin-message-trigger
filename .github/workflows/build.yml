@@ -84,11 +84,11 @@ jobs:
       - name: Build plugin binary
         run: cargo build --release --target ${{ matrix.config.target }} -p ${{ env.PROGRAM_NAME}}
       - name: Create target dir if it didn't exist
-        run: mkdir -R target/release  
+        run: mkdir -p target/release  
 
       - name: Copy plugin binary to standard location
         shell: bash
-        run: mkdir target/release && cp target/${{ matrix.config.target }}/release/${{ env.PROGRAM_NAME}}${{ matrix.config.extension }} target/release/${{ env.PROGRAM_NAME}}${{ matrix.config.extension }}
+        run: cp target/${{ matrix.config.target }}/release/${{ env.PROGRAM_NAME}}${{ matrix.config.extension }} target/release/${{ env.PROGRAM_NAME}}${{ matrix.config.extension }}
 
       - name: Pluginify plugin binary
         run: spin pluginify --arch ${{ matrix.config.arch }} --os ${{matrix.config.target_os}}
