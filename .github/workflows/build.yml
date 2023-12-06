@@ -95,7 +95,7 @@ jobs:
       - name: Archive pluginified
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.PROGRAM_NAME}}-${{ matrix.config.target_os }}-${{ matrix.config.arch }}
+          name: ${{ env.PROGRAM_NAME}}-${{ matrix.config.target_os }}-${{ matrix.config.arch }}${{matrix.config.extension}}
           path: |
             *.tar.gz
             *.json
