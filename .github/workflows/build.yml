@@ -80,6 +80,14 @@ jobs:
         with:
           _input-file: ./spin-pluginify.toml
           "0.1.0": ${{ env.RELEASE_VERSION }}
+
+          
+      - name: Set Extension
+        uses: bluwy/substitute-string-action@v2.0.1
+        if: matrix.config.target == 'x86_64-pc-windows-gnu'
+        with:
+          _input-file: ./spin-pluginify.toml
+          "./target/release/trigger-message": "./target/release/trigger-message.exe"
           
       - name: Build plugin binary
         run: cargo build --release --target ${{ matrix.config.target }} -p ${{ env.PROGRAM_NAME}}
