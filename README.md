@@ -1,6 +1,6 @@
 # Spin Message Trigger
 
-A generiuc messaging trigger for [Fermyon Spin](https://github.com/fermyon/spin). Note this is an experimental/work-in-progress repo, and is not production ready at this point. Also - if you have suggestions for improvements, feel free to make them in the Issues tab.
+A generic messaging trigger for [Fermyon Spin](https://github.com/fermyon/spin). Note this is an experimental/work-in-progress repo, and is not production ready at this point. Also - if you have suggestions for improvements, feel free to make them in the Issues tab.
 
 ## Features
 
